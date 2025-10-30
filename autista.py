@@ -13,37 +13,36 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS per sfondo e contenitore centrato
+# CSS per sfondo e testo nero
 st.markdown(
     """
     <style>
-    /* Sfondo dell'intera app */
+    /* Sfondo a tutta pagina */
     .stApp {
         background: url("static/sfondo.jpg") no-repeat center center fixed;
         background-size: cover;
     }
 
-    /* Box principale con overlay semitrasparente */
+    /* Box principale con sfondo bianco traslucido per leggibilità */
     .main > div {
-        background-color: rgba(0, 0, 0, 0.5) !important;
+        background-color: rgba(255, 255, 255, 0.8) !important;
         padding: 20px;
         border-radius: 10px;
+        color: black !important;  /* testo nero */
     }
 
-    /* Forza testo bianco */
-    .stApp, .stApp * {
-        color: white !important;
+    /* Input, checkbox, selectbox leggibili */
+    .stTextInput input,
+    .stSelectbox select,
+    .stRadio input + label,
+    .stCheckbox input + label {
+        color: black !important;
+        background-color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    /* Checkbox e selettori leggibili */
-    .stCheckbox, .stRadio, .stSelectbox, .stTextInput input {
-        background-color: rgba(255,255,255,0.1) !important;
-        color: white !important;
-    }
-
-    /* Pulsanti personalizzati */
+    /* Pulsanti scuri su sfondo chiaro */
     .stButton button {
-        background-color: #2196f3;
+        background-color: #1976d2;
         color: white;
         border-radius: 8px;
         border: none;
@@ -166,6 +165,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
