@@ -22,7 +22,7 @@ st.markdown(
     /* Sfondo a tutta pagina */
     .stApp {
         background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
-        background-size: cover;
+        background-size: contain;
     }
 
     /* Box principale con sfondo bianco traslucido per leggibilità */
@@ -167,6 +167,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
