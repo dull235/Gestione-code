@@ -24,7 +24,9 @@ if ('serviceWorker' in navigator) {
 st.title("Gestione Code")
 
 
-st.set_page_config(page_title="Autista - Carico/Scarico", layout="centered")
+st.set_page_config(
+    page_title="Gestione Code",
+    page_icon="static/icon-192.png")
 st.title("🚚 Benvenuto Autista")
 
 DB_FILE = "tickets.db"
@@ -134,6 +136,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
