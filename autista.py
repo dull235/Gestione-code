@@ -9,9 +9,11 @@ import streamlit as st
 # Imposta la pagina e l'icona
 st.set_page_config(
     page_title="Gestione Code - Autisti",
-    page_icon="static/icon.png",
+    page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
     layout="wide"
 )
+
+background_url= "https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg"
 
 # CSS per sfondo e testo nero
 st.markdown(
@@ -19,7 +21,7 @@ st.markdown(
     <style>
     /* Sfondo a tutta pagina */
     .stApp {
-        background: url("static/sfondo.jpg") no-repeat center center fixed;
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
         background-size: cover;
     }
 
@@ -165,6 +167,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
