@@ -6,28 +6,31 @@ from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche
 import streamlit as st
 
-# --- PWA: collegamento a manifest e service worker ---
-st.markdown("""
-<link rel="manifest" href="https://raw.githubusercontent.com/dull235/Gestione-code/main/manifest.json">
-<meta name="theme-color" content="#2196f3">
+st.set_page_config(page_title="Gestione Code - Autisti")
 
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('static/service-worker.js')
-    .then(function() { console.log("Service Worker registrato con successo."); })
-    .catch(function(error) { console.log("Errore nella registrazione del Service Worker:", error); });
-}
-</script>
-""", unsafe_allow_html=True)
-# --- fine PWA ---
+# CSS per lo sfondo
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("static/sfondo.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-st.title("Gestione Code")
-
+st.title("Pagina Autisti")
+st.write("Benvenuti nella pagina autisti!")
 
 st.set_page_config(
     page_title="Gestione Code",
     page_icon="static/icon-192.png")
-st.title("🚚 Benvenuto Autista")
+st.title("🚚 Benvenuto")
 
 DB_FILE = "tickets.db"
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -136,6 +139,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
