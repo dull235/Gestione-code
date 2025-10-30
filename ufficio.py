@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from streamlit_autorefresh import st_autorefresh
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
 
 st.set_page_config(page_title="Ufficio Carico/Scarico", layout="wide")
@@ -20,11 +19,13 @@ notifiche_testi = {
     "Termina Servizio": "Grazie mille per la sua visita."
 }
 
-# --- Aggiornamento automatico ogni 5 secondi ---
-st_autorefresh(interval=5000, key="refresh_ufficio")
+# 🔄 Refresh automatico ogni 3 secondi per aggiornare i ticket appena inseriti dagli autisti
+st_autorefresh_interval = 3000  # millisecondi
 
 if view == "Ticket Aperti":
+    st_autorefresh(interval=st_autorefresh_interval, key="refresh_ticket_aperti")
     tickets = get_ticket_attivi()
+    
     if tickets:
         df = pd.DataFrame(tickets, columns=[
             "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
@@ -56,21 +57,17 @@ if view == "Ticket Aperti":
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
                 st.success("Ticket terminato.")
 
-        # --- Mappa in tempo reale ---
+        # Mappa in tempo reale
         st.subheader("📍 Posizione Ticket Attivi")
-        if df["Lat"].notna().any() and df["Lon"].notna().any():
-            avg_lat = df["Lat"].mean()
-            avg_lon = df["Lon"].mean()
-        else:
-            avg_lat, avg_lon = 45.0, 9.0  # default
-
+        avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
+        avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
         m = folium.Map(location=[avg_lat, avg_lon], zoom_start=6)
         for _, r in df.iterrows():
             if pd.notna(r["Lat"]) and pd.notna(r["Lon"]):
                 folium.Marker(
                     [r["Lat"], r["Lon"]],
                     popup=f"{r['Nome']} - {r['Tipo']}",
-                    tooltip=f"{r['Stato']} - {r['Targa']}"
+                    tooltip=r["Stato"]
                 ).add_to(m)
         st_folium(m, height=500, width='100%')
     else:
@@ -78,7 +75,9 @@ if view == "Ticket Aperti":
 
 else:
     st.subheader("📜 Storico Ticket")
+    st_autorefresh(interval=st_autorefresh_interval, key="refresh_ticket_storico")
     storico = get_ticket_storico()
+    
     if storico:
         df_s = pd.DataFrame(storico, columns=[
             "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
