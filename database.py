@@ -1,7 +1,9 @@
 import sqlite3
 from datetime import datetime
+import os
 
-DB_FILE = "tickets.db"
+# Percorso assoluto al database (cartella corrente)
+DB_FILE = os.path.join(os.getcwd(), "tickets.db")
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -87,7 +89,15 @@ def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
     conn.commit()
     conn.close()
 
-# --- Recupera ticket ---
+# --- Aggiorna posizione lat/lon ---
+def aggiorna_posizione(ticket_id, lat, lon):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
+    conn.commit()
+    conn.close()
+
+# --- Recupera ticket attivi ---
 def get_ticket_attivi():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -96,6 +106,7 @@ def get_ticket_attivi():
     conn.close()
     return result
 
+# --- Recupera ticket storico ---
 def get_ticket_storico():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -104,6 +115,7 @@ def get_ticket_storico():
     conn.close()
     return result
 
+# --- Recupera notifiche per ticket ---
 def get_notifiche(ticket_id):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -112,4 +124,5 @@ def get_notifiche(ticket_id):
     conn.close()
     return result
 
+# Inizializza DB a import
 init_db()
