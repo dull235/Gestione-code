@@ -9,7 +9,7 @@ import streamlit as st
 # Imposta la pagina e l'icona
 st.set_page_config(
     page_title="Gestione Code - Autisti",
-    page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.jpg",
+    page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
     layout="wide"
 )
 
@@ -167,6 +167,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
