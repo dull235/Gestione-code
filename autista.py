@@ -9,7 +9,7 @@ import streamlit as st
 
 # --- PWA Manifest e Service Worker ---
 st.markdown("""
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="https://raw.githubusercontent.com/dull235/Gestione-code/main/manifest.json">
 <meta name="theme-color" content="#2196f3">
 <script>
 if ('serviceWorker' in navigator) {
@@ -133,6 +133,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
