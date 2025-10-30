@@ -39,7 +39,7 @@ st.markdown(
     .stRadio input + label,
     .stCheckbox input + label {
         color: black !important;
-        background-color: rgba(0, 255, 0, 0.9) !important;
+        background-color: rgba(144, 238, 144, 0.9) !important;
     }
 
     /* Pulsanti scuri su sfondo chiaro */
@@ -167,6 +167,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
