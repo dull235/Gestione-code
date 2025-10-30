@@ -2,6 +2,6 @@ streamlit
 pandas
 folium
 streamlit-folium
-sqlite3
 streamlit-autorefresh
+
 
