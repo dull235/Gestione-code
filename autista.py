@@ -6,13 +6,14 @@ from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche
 import streamlit as st
 
+# Imposta la pagina e l'icona
 st.set_page_config(
     page_title="Gestione Code - Autisti",
-    page_icon="🧾",
+    page_icon="static/icon.png",
     layout="wide"
 )
 
-# CSS corretto per sfondo e overlay
+# CSS per sfondo e contenitore centrato
 st.markdown(
     """
     <style>
@@ -22,16 +23,30 @@ st.markdown(
         background-size: cover;
     }
 
-    /* Overlay semitrasparente solo sul contenitore principale */
-    .stApp > .main {
-        background-color: rgba(0, 0, 0, 0.4);
+    /* Box principale con overlay semitrasparente */
+    .main > div {
+        background-color: rgba(0, 0, 0, 0.5) !important;
         padding: 20px;
         border-radius: 10px;
     }
 
-    /* Testo bianco */
+    /* Forza testo bianco */
     .stApp, .stApp * {
         color: white !important;
+    }
+
+    /* Checkbox e selettori leggibili */
+    .stCheckbox, .stRadio, .stSelectbox, .stTextInput input {
+        background-color: rgba(255,255,255,0.1) !important;
+        color: white !important;
+    }
+
+    /* Pulsanti personalizzati */
+    .stButton button {
+        background-color: #2196f3;
+        color: white;
+        border-radius: 8px;
+        border: none;
     }
     </style>
     """,
@@ -41,11 +56,7 @@ st.markdown(
 # Contenuto della pagina
 st.title("Pagina Autisti")
 st.write("Benvenuti nella pagina autisti!")
-st.write("Qui puoi gestire tutti i dati relativi agli autisti e alle code.")
-
-# Esempio di widget
-nome_autista = st.text_input("Nome autista")
-st.button("Aggiungi autista")
+st.write("Gestisci i dati relativi agli autisti e alle code.")
 
 
 DB_FILE = "tickets.db"
@@ -155,6 +166,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
