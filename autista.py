@@ -3,8 +3,7 @@ import sqlite3
 import threading
 import time
 from streamlit_autorefresh import st_autorefresh
-from database import inserisci_ticket, get_notifiche
-import streamlit as st
+from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
 # Imposta la pagina e l'icona
 st.set_page_config(
@@ -13,52 +12,21 @@ st.set_page_config(
     layout="wide"
 )
 
-background_url= "https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg"
-
-# CSS per sfondo e testo nero
+# --- CSS ---
 st.markdown(
     """
     <style>
-    /* Sfondo a tutta pagina */
-    .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
-        background-size: contain;
-    }
-
-    /* Box principale con sfondo bianco traslucido per leggibilità */
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.8) !important;
-        padding: 20px;
-        border-radius: 10px;
-        color: black !important;  /* testo nero */
-    }
-
-    /* Input, checkbox, selectbox leggibili */
-    .stTextInput input,
-    .stSelectbox select,
-    .stRadio input + label,
-    .stCheckbox input + label {
-        color: black !important;
-        background-color: rgba(144, 238, 144, 0.9) !important;
-    }
-
-    /* Pulsanti scuri su sfondo chiaro */
-    .stButton button {
-        background-color: #1976d2;
-        color: white;
-        border-radius: 8px;
-        border: none;
-    }
+    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: contain; }
+    .main > div { background-color: rgba(255, 255, 255, 0.8) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
+    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Contenuto della pagina
 st.title("Pagina Autisti")
-st.write("Benvenuti nella pagina autisti!")
 st.write("Gestisci i dati relativi agli autisti e alle code.")
-
 
 DB_FILE = "tickets.db"
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -72,10 +40,17 @@ if "modalita" not in st.session_state:
 
 # --- Aggiornamento automatico posizione ---
 def auto_update_position(ticket_id):
+    """
+    Aggiorna la posizione ogni 10 secondi con lat/lon reale dal browser
+    """
+    import streamlit_js_eval
+    from streamlit_js_eval import get_geolocation
+
     while True:
-        lat, lon = 45.1234, 9.5678  # esempio, sostituire con GPS reale
-        c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
-        conn.commit()
+        location = get_geolocation()
+        if location:
+            lat, lon = location['latitude'], location['longitude']
+            aggiorna_posizione(ticket_id, lat, lon)
         time.sleep(10)
 
 # --- Schermata iniziale ---
@@ -92,10 +67,8 @@ elif st.session_state.modalita == "form":
     nome = st.text_input("Nome e Cognome")
     azienda = st.text_input("Azienda")
     targa = st.text_input("Targa Motrice")
-
     rimorchio = st.checkbox("Hai un rimorchio?")
     targa_rim = st.text_input("Targa Rimorchio") if rimorchio else ""
-
     tipo = st.radio("Tipo Operazione", ["Carico", "Scarico"])
     destinazione = produttore = ""
     if tipo == "Carico":
@@ -107,35 +80,30 @@ elif st.session_state.modalita == "form":
         if not nome or not azienda or not targa:
             st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
         else:
-            try:
-                inserisci_ticket(
-                    nome=nome,
-                    azienda=azienda,
-                    targa=targa,
-                    tipo=tipo,
-                    destinazione=destinazione,
-                    produttore=produttore,
-                    rimorchio=int(rimorchio),
-                    lat=45.1234,
-                    lon=9.5678
-                )
-                # Recupera ID nuovo ticket
-                c.execute("SELECT MAX(ID) FROM tickets")
-                st.session_state.ticket_id = c.fetchone()[0]
+            inserisci_ticket(
+                nome=nome,
+                azienda=azienda,
+                targa=targa,
+                tipo=tipo,
+                destinazione=destinazione,
+                produttore=produttore,
+                rimorchio=int(rimorchio)
+            )
+            # Recupera ID nuovo ticket
+            c.execute("SELECT MAX(ID) FROM tickets")
+            st.session_state.ticket_id = c.fetchone()[0]
 
-                # Avvia thread posizione
-                threading.Thread(
-                    target=auto_update_position,
-                    args=(st.session_state.ticket_id,),
-                    daemon=True
-                ).start()
+            # Avvia thread posizione
+            threading.Thread(
+                target=auto_update_position,
+                args=(st.session_state.ticket_id,),
+                daemon=True
+            ).start()
 
-                st.session_state.modalita = "notifiche"
-                st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Errore durante l'invio del ticket: {e}")
+            st.session_state.modalita = "notifiche"
+            st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+            time.sleep(1)
+            st.rerun()
 
 # --- Schermata notifiche ---
 elif st.session_state.modalita == "notifiche":
@@ -167,23 +135,3 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
