@@ -53,11 +53,6 @@ st.markdown(
 # Contenuto della pagina
 st.title("Pagina Autisti")
 st.write("Benvenuti nella pagina autisti!")
-st.write("Qui puoi gestire tutti i dati relativi agli autisti e alle code.")
-
-# Esempio di widget
-nome_autista = st.text_input("Nome autista")
-st.button("Aggiungi autista")
 
 DB_FILE = "tickets.db"
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -166,6 +161,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
