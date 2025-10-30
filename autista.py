@@ -4,24 +4,25 @@ import threading
 import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche
-
 import streamlit as st
 
-# --- PWA Manifest e Service Worker ---
+# --- PWA: collegamento a manifest e service worker ---
 st.markdown("""
 <link rel="manifest" href="https://raw.githubusercontent.com/dull235/Gestione-code/main/manifest.json">
 <meta name="theme-color" content="#2196f3">
+
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('static/service-worker.js');
+  navigator.serviceWorker.register('static/service-worker.js')
+    .then(function() { console.log("Service Worker registrato con successo."); })
+    .catch(function(error) { console.log("Errore nella registrazione del Service Worker:", error); });
 }
 </script>
 """, unsafe_allow_html=True)
 # --- fine PWA ---
 
-
-# Titolo principale dell'app
 st.title("Gestione Code")
+
 
 st.set_page_config(page_title="Autista - Carico/Scarico", layout="centered")
 st.title("🚚 Benvenuto Autista")
@@ -133,6 +134,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
