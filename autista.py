@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import threading
 import time
-from streamlit-autorefresh import st_autorefresh
+from streamlit-autorefresh import st-autorefresh
 from database import inserisci_ticket, get_notifiche
 
 st.set_page_config(page_title="Autista - Carico/Scarico", layout="centered")
@@ -115,4 +115,5 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
