@@ -1,7 +1,7 @@
 {
   "name": "Gestione Code",
   "short_name": "CodeApp",
-  "start_url": "https://gestione-code-jr3dgfpkzs8x9iqtd8nrr6.streamlit.app",
+  "start_url": "https://raw.githubusercontent.com/dull235/Gestione-code/main/manifest.json",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2196f3",
