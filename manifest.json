@@ -1,6 +1,6 @@
 {
-  "name": "Gestione Code VIBECO",
-  "short_name": "CODE",
+  "name": "Gestione Code",
+  "short_name": "CodeApp",
   "start_url": "https://gestione-code-jr3dgfpkzs8x9iqtd8nrr6.streamlit.app/",
   "display": "standalone",
   "background_color": "#ffffff",
