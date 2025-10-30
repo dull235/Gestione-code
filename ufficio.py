@@ -43,22 +43,25 @@ st.markdown(
 # --- LOGIN ---
 if "login_success" not in st.session_state:
     st.session_state.login_success = False
-
 if not st.session_state.login_success:
     st.title("🏢 Login Ufficio Carico/Scarico")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    # Esempio semplice: utenti hardcoded, sostituire con DB in produzione
     utenti = {"admin": "admin123", "operatore": "pass123"}
 
+    login_msg = st.empty()  # contenitore per messaggi dinamici
     if st.button("Accedi"):
         if username in utenti and utenti[username] == password:
             st.session_state.login_success = True
-            st.success("Login effettuato con successo!")
-            st.experimental_rerun()
+            login_msg.success("Login effettuato con successo!")
         else:
-            st.error("Username o password errati.")
+            login_msg.error("Username o password errati.")
+
+# Solo se login avvenuto
+if st.session_state.login_success:
+    # qui va tutto il tuo codice ufficio
+
 else:
     st.title("🏢 Gestione Ticket Ufficio")
 
@@ -139,3 +142,4 @@ else:
             st.download_button("📤 Esporta Storico CSV", csv, "storico_tickets.csv", "text/csv")
         else:
             st.info("Nessun ticket chiuso presente nello storico.")
+
