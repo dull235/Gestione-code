@@ -58,12 +58,11 @@ if not st.session_state.login_success:
         else:
             login_msg.error("Username o password errati.")
 
-# Solo se login avvenuto
-if st.session_state.login_success:
-    # qui va tutto il tuo codice ufficio
-
-else:
+# Blocchi successivi solo se login avvenuto
+if "login_success" in st.session_state and st.session_state.login_success:
     st.title("🏢 Gestione Ticket Ufficio")
+    # ... qui va tutto il codice ufficio
+
 
     st.sidebar.title("📋 Menu")
     view = st.sidebar.radio("Seleziona vista:", ["Ticket Aperti", "Storico Ticket"])
@@ -142,4 +141,5 @@ else:
             st.download_button("📤 Esporta Storico CSV", csv, "storico_tickets.csv", "text/csv")
         else:
             st.info("Nessun ticket chiuso presente nello storico.")
+
 
