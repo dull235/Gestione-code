@@ -6,44 +6,32 @@ from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche
 import streamlit as st
 
-# Configurazione della pagina
 st.set_page_config(
     page_title="Gestione Code - Autisti",
     page_icon="🧾",
     layout="wide"
 )
 
-# CSS per sfondo e overlay
+# CSS corretto per sfondo e overlay
 st.markdown(
     """
     <style>
-    /* Sfondo */
+    /* Sfondo dell'intera app */
     .stApp {
-        background-image: url("static/sfondo.jpg");  /* sostituisci con il tuo file */
+        background: url("static/sfondo.jpg") no-repeat center center fixed;
         background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        position: relative;
     }
 
-    /* Overlay semitrasparente per rendere il testo leggibile */
-    .stApp::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.4);  /* modifica l'opacità se serve */
-        z-index: 0;
+    /* Overlay semitrasparente solo sul contenitore principale */
+    .stApp > .main {
+        background-color: rgba(0, 0, 0, 0.4);
+        padding: 20px;
+        border-radius: 10px;
     }
 
-    /* Stile del contenitore principale */
-    .main > div {
-        position: relative;
-        z-index: 1;
-        color: white;  /* colore del testo */
+    /* Testo bianco */
+    .stApp, .stApp * {
+        color: white !important;
     }
     </style>
     """,
@@ -53,6 +41,12 @@ st.markdown(
 # Contenuto della pagina
 st.title("Pagina Autisti")
 st.write("Benvenuti nella pagina autisti!")
+st.write("Qui puoi gestire tutti i dati relativi agli autisti e alle code.")
+
+# Esempio di widget
+nome_autista = st.text_input("Nome autista")
+st.button("Aggiungi autista")
+
 
 DB_FILE = "tickets.db"
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -161,6 +155,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
