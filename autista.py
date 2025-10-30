@@ -1,36 +1,27 @@
 import streamlit as st
-import sqlite3
 import threading
 import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-# Imposta la pagina e l'icona
+# --- Imposta pagina e CSS ---
 st.set_page_config(
     page_title="Gestione Code - Autisti",
     page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
     layout="wide"
 )
 
-# --- CSS ---
-st.markdown(
-    """
-    <style>
-    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: contain; }
-    .main > div { background-color: rgba(255, 255, 255, 0.8) !important; padding: 20px; border-radius: 10px; color: black !important; }
-    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
-    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: contain; }
+.main > div { background-color: rgba(255, 255, 255, 0.8) !important; padding: 20px; border-radius: 10px; color: black !important; }
+.stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
+.stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
+</style>
+""", unsafe_allow_html=True)
 
 st.title("Pagina Autisti")
 st.write("Gestisci i dati relativi agli autisti e alle code.")
-
-DB_FILE = "tickets.db"
-conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-c = conn.cursor()
 
 # --- Variabili di sessione ---
 if "ticket_id" not in st.session_state:
@@ -50,6 +41,7 @@ def auto_update_position(ticket_id):
         location = get_geolocation()
         if location:
             lat, lon = location['latitude'], location['longitude']
+            # usa connessione locale dentro aggiorna_posizione
             aggiorna_posizione(ticket_id, lat, lon)
         time.sleep(10)
 
@@ -60,7 +52,7 @@ if st.session_state.modalita == "iniziale":
         st.session_state.modalita = "form"
         st.rerun()
 
-# --- Schermata form di compilazione ---
+# --- Form di compilazione ---
 elif st.session_state.modalita == "form":
     st.subheader("📋 Compila i tuoi dati")
 
@@ -80,7 +72,8 @@ elif st.session_state.modalita == "form":
         if not nome or not azienda or not targa:
             st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
         else:
-            inserisci_ticket(
+            # Inserimento ticket, ritorna ID
+            ticket_id = inserisci_ticket(
                 nome=nome,
                 azienda=azienda,
                 targa=targa,
@@ -89,14 +82,12 @@ elif st.session_state.modalita == "form":
                 produttore=produttore,
                 rimorchio=int(rimorchio)
             )
-            # Recupera ID nuovo ticket
-            c.execute("SELECT MAX(ID) FROM tickets")
-            st.session_state.ticket_id = c.fetchone()[0]
+            st.session_state.ticket_id = ticket_id
 
             # Avvia thread posizione
             threading.Thread(
                 target=auto_update_position,
-                args=(st.session_state.ticket_id,),
+                args=(ticket_id,),
                 daemon=True
             ).start()
 
@@ -105,15 +96,13 @@ elif st.session_state.modalita == "form":
             time.sleep(1)
             st.rerun()
 
-# --- Schermata notifiche ---
+# --- Notifiche ticket ---
 elif st.session_state.modalita == "notifiche":
     ticket_id = st.session_state.ticket_id
     st.success(f"📦 Ticket attivo ID: {ticket_id}")
     st.subheader("📢 Notifiche ricevute")
 
-    # 🔄 Refresh automatico ogni 3 secondi
     st_autorefresh(interval=3000, key="auto_refresh_notifiche")
-
     notifiche = get_notifiche(ticket_id)
 
     if notifiche:
