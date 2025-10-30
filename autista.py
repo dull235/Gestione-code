@@ -5,13 +5,12 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche
 
-# --- PWA ---
+import streamlit as st
+
+# --- PWA Manifest e Service Worker ---
 st.markdown("""
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2196f3">
-""", unsafe_allow_html=True)
-
-st.markdown("""
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('static/service-worker.js');
@@ -19,6 +18,7 @@ if ('serviceWorker' in navigator) {
 </script>
 """, unsafe_allow_html=True)
 # --- fine PWA ---
+
 
 # Titolo principale dell'app
 st.title("Gestione Code")
@@ -133,6 +133,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
