@@ -4,6 +4,7 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
+# --- Imposta pagina e CSS ---
 st.set_page_config(
     page_title="Gestione Code - Autisti",
     page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
@@ -22,11 +23,13 @@ st.markdown("""
 st.title("Pagina Autisti")
 st.write("Gestisci i dati relativi agli autisti e alle code.")
 
+# --- Variabili di sessione ---
 if "ticket_id" not in st.session_state:
     st.session_state.ticket_id = None
 if "modalita" not in st.session_state:
     st.session_state.modalita = "iniziale"
 
+# --- Aggiornamento automatico posizione ---
 def auto_update_position(ticket_id):
     import streamlit_js_eval
     from streamlit_js_eval import get_geolocation
@@ -38,26 +41,28 @@ def auto_update_position(ticket_id):
             aggiorna_posizione(ticket_id, lat, lon)
         time.sleep(10)
 
+# --- Schermata iniziale ---
 if st.session_state.modalita == "iniziale":
     st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
     if st.button("🚀 Avvia"):
         st.session_state.modalita = "form"
-        st.rerun()
+        st.experimental_rerun()
 
+# --- Form di compilazione ---
 elif st.session_state.modalita == "form":
     st.subheader("📋 Compila i tuoi dati")
 
-    nome = st.text_input("Nome e Cognome", key="nome")
-    azienda = st.text_input("Azienda", key="azienda")
-    targa = st.text_input("Targa Motrice", key="targa")
-    rimorchio = st.checkbox("Hai un rimorchio?", key="rimorchio")
-    targa_rim = st.text_input("Targa Rimorchio", key="targa_rim") if rimorchio else ""
-    tipo = st.radio("Tipo Operazione", ["Carico", "Scarico"], key="tipo")
+    nome = st.text_input("Nome e Cognome")
+    azienda = st.text_input("Azienda")
+    targa = st.text_input("Targa Motrice")
+    rimorchio = st.checkbox("Hai un rimorchio?")
+    targa_rim = st.text_input("Targa Rimorchio") if rimorchio else ""
+    tipo = st.radio("Tipo Operazione", ["Carico", "Scarico"])
     destinazione = produttore = ""
     if tipo == "Carico":
-        destinazione = st.text_input("Destinazione", key="destinazione")
+        destinazione = st.text_input("Destinazione")
     else:
-        produttore = st.text_input("Produttore", key="produttore")
+        produttore = st.text_input("Produttore")
 
     if st.button("📨 Invia Richiesta"):
         if not nome or not azienda or not targa:
@@ -82,8 +87,10 @@ elif st.session_state.modalita == "form":
 
             st.session_state.modalita = "notifiche"
             st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+            time.sleep(1)
             st.experimental_rerun()
 
+# --- Notifiche ticket ---
 elif st.session_state.modalita == "notifiche":
     ticket_id = st.session_state.ticket_id
     st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -105,8 +112,9 @@ elif st.session_state.modalita == "notifiche":
 
     col1, col2 = st.columns(2)
     if col1.button("🔄 Aggiorna ora"):
-        st.rerun()
+        st.experimental_rerun()
+
     if col2.button("❌ Chiudi ticket locale"):
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
-        st.rerun()
+        st.experimental_rerun()
