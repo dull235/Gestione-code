@@ -5,8 +5,11 @@ from streamlit_folium import st_folium
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
 
 def main():
- 
+    st.set_page_config(page_title="Ufficio", layout="wide")
+    st.title("🏢 Gestione Ticket Ufficio")
 
+
+ 
 
 st.set_page_config(page_title="Ufficio Carico/Scarico", layout="wide")
 
