@@ -41,7 +41,6 @@ def auto_update_position(ticket_id):
         location = get_geolocation()
         if location:
             lat, lon = location['latitude'], location['longitude']
-            # usa connessione locale dentro aggiorna_posizione
             aggiorna_posizione(ticket_id, lat, lon)
         time.sleep(10)
 
@@ -73,7 +72,7 @@ elif st.session_state.modalita == "form":
             st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
         else:
             # Inserimento ticket, ritorna ID
-           st.session_state.ticket_id = inserisci_ticket(
+            ticket_id = inserisci_ticket(
                 nome=nome,
                 azienda=azienda,
                 targa=targa,
@@ -81,8 +80,8 @@ elif st.session_state.modalita == "form":
                 destinazione=destinazione,
                 produttore=produttore,
                 rimorchio=int(rimorchio)
-           )
-           st.session_state.ticket_id = ticket_id
+            )
+            st.session_state.ticket_id = ticket_id
 
             # Avvia thread posizione
             threading.Thread(
@@ -124,8 +123,3 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
-
-
-
-
-
