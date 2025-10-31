@@ -5,9 +5,9 @@ from ufficio import main as ufficio_app
 st.set_page_config(page_title="Gestione Code", layout="wide")
 
 st.sidebar.title("🚚 Gestione Code")
-page = st.sidebar.radio("Seleziona la sezione:", ["Autista", "Ufficio"])
+pagina = st.sidebar.radio("Seleziona la modalità:", ["Autista", "Ufficio"])
 
-if page == "Autista":
+if pagina == "Autista":
     autista_app()
-elif page == "Ufficio":
+else:
     ufficio_app()
