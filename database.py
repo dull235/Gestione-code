@@ -1,9 +1,7 @@
 import sqlite3
 from datetime import datetime
-import os
 
-# --- Usa percorso assoluto per DB ---
-DB_FILE = os.path.join(os.path.dirname(__file__), "tickets.db")
+DB_FILE = "tickets.db"
 
 # --- Inizializzazione database ---
 def init_db():
@@ -45,6 +43,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
@@ -89,6 +88,7 @@ def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
     conn.commit()
     conn.close()
 
+
 # --- Aggiorna posizione GPS ---
 def aggiorna_posizione(ticket_id, lat, lon):
     conn = sqlite3.connect(DB_FILE)
@@ -96,6 +96,7 @@ def aggiorna_posizione(ticket_id, lat, lon):
     c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
     conn.commit()
     conn.close()
+
 
 # --- Recupera ticket attivi ---
 def get_ticket_attivi():
@@ -106,6 +107,7 @@ def get_ticket_attivi():
     conn.close()
     return result
 
+
 # --- Recupera ticket storici ---
 def get_ticket_storico():
     conn = sqlite3.connect(DB_FILE)
@@ -114,6 +116,7 @@ def get_ticket_storico():
     result = c.fetchall()
     conn.close()
     return result
+
 
 # --- Recupera notifiche di un ticket ---
 def get_notifiche(ticket_id):
@@ -124,5 +127,5 @@ def get_notifiche(ticket_id):
     conn.close()
     return result
 
-# --- Inizializza database ---
+# --- Inizializza database all'avvio ---
 init_db()
