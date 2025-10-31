@@ -4,6 +4,18 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
+def main():
+    st.set_page_config(page_title="Autista", layout="wide")
+    st.title("🚛 Pagina Autisti")
+
+    if "ticket_id" not in st.session_state:
+        st.session_state.ticket_id = None
+    if "modalita" not in st.session_state:
+        st.session_state.modalita = "iniziale"
+
+
+
+
 st.set_page_config(page_title="Gestione Code - Autisti", layout="wide")
 st.title("Pagina Autisti")
 
@@ -81,3 +93,4 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
