@@ -43,7 +43,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-
+init_db()
 
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
@@ -129,3 +129,4 @@ def get_notifiche(ticket_id):
 
 # --- Inizializza database all'avvio ---
 init_db()
+
