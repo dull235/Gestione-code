@@ -93,4 +93,6 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+if __name__ == "__main__":
+    main()
 
