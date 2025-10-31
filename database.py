@@ -48,7 +48,7 @@ def init_db():
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
     """
-    Inserisce un nuovo ticket nel database.
+    Inserisce un nuovo ticket nel database e restituisce l'ID creato.
     """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -56,9 +56,10 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
         INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (nome, azienda, targa, tipo, destinazione, produttore, rimorchio, lat, lon))
+    ticket_id = c.lastrowid  # ← restituisce subito l'ID del nuovo ticket
     conn.commit()
     conn.close()
-
+    return ticket_id
 
 # --- Aggiorna stato e notifica ---
 def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
@@ -139,3 +140,4 @@ def get_notifiche(ticket_id):
 
 # --- Inizializza database ---
 init_db()
+
