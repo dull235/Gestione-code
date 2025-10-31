@@ -1,133 +1,101 @@
 import sqlite3
-from datetime import datetime
 import os
+from datetime import datetime
 
-# Percorso assoluto del database condiviso
+# Percorso del database nella cartella dell'app
 DB_FILE = os.path.join(os.path.dirname(__file__), "tickets.db")
 
 # --- Inizializzazione database ---
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
-
     c.execute("""
-        CREATE TABLE IF NOT EXISTS tickets (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            Nome TEXT,
-            Azienda TEXT,
-            Targa TEXT,
-            Rimorchio INTEGER DEFAULT 0,
-            Tipo TEXT,
-            Destinazione TEXT,
-            Produttore TEXT,
-            Stato TEXT DEFAULT 'Nuovo',
-            Attivo INTEGER DEFAULT 1,
-            Data_creazione TEXT DEFAULT CURRENT_TIMESTAMP,
-            Data_chiamata TEXT,
-            Data_chiusura TEXT,
-            Durata_servizio TEXT,
-            Ultima_notifica TEXT,
-            Lat REAL,
-            Lon REAL
-        )
+    CREATE TABLE IF NOT EXISTS tickets (
+        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        Nome TEXT,
+        Azienda TEXT,
+        Targa TEXT,
+        Tipo TEXT,
+        Destinazione TEXT,
+        Produttore TEXT,
+        Rimorchio INTEGER DEFAULT 0,
+        Lat REAL,
+        Lon REAL,
+        Stato TEXT DEFAULT 'Nuovo',
+        Attivo INTEGER DEFAULT 1,
+        Data_creazione TEXT DEFAULT CURRENT_TIMESTAMP,
+        Data_chiamata TEXT,
+        Data_chiusura TEXT,
+        Durata_servizio TEXT,
+        Ultima_notifica TEXT
+    )
     """)
-
     c.execute("""
-        CREATE TABLE IF NOT EXISTS notifiche (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            Ticket_ID INTEGER,
-            Testo TEXT,
-            Data_invio TEXT DEFAULT CURRENT_TIMESTAMP
-        )
+    CREATE TABLE IF NOT EXISTS notifiche (
+        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        Ticket_ID INTEGER,
+        Testo TEXT,
+        Data TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(Ticket_ID) REFERENCES tickets(ID)
+    )
     """)
-
     conn.commit()
     conn.close()
 
+# Inizializza il DB se non esiste
+if not os.path.exists(DB_FILE):
+    init_db()
 
-# --- Inserisci nuovo ticket ---
+# --- Funzioni CRUD ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
     c.execute("""
         INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (nome, azienda, targa, tipo, destinazione, produttore, rimorchio, lat, lon))
-    ticket_id = c.lastrowid
     conn.commit()
+    ticket_id = c.lastrowid
     conn.close()
     return ticket_id
 
-
-# --- Aggiorna stato e notifica ---
-def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    if nuovo_stato == "Chiamato":
-        c.execute("UPDATE tickets SET Stato=?, Data_chiamata=?, Ultima_notifica=? WHERE ID=?",
-                  (nuovo_stato, now, notifica_testo, ticket_id))
-    elif nuovo_stato == "Terminato":
-        c.execute("SELECT Data_chiamata FROM tickets WHERE ID=?", (ticket_id,))
-        start = c.fetchone()
-        durata = None
-        if start and start[0]:
-            durata = str(datetime.strptime(now, "%Y-%m-%d %H:%M:%S") -
-                         datetime.strptime(start[0], "%Y-%m-%d %H:%M:%S"))
-        c.execute("""UPDATE tickets
-                     SET Stato=?, Data_chiusura=?, Durata_servizio=?, Attivo=0, Ultima_notifica=?
-                     WHERE ID=?""",
-                  (nuovo_stato, now, durata, notifica_testo, ticket_id))
-    else:
-        c.execute("UPDATE tickets SET Stato=?, Ultima_notifica=? WHERE ID=?",
-                  (nuovo_stato, notifica_testo, ticket_id))
-
-    if notifica_testo:
-        c.execute("INSERT INTO notifiche (Ticket_ID, Testo) VALUES (?, ?)", (ticket_id, notifica_testo))
-
-    conn.commit()
-    conn.close()
-
-
-# --- Aggiorna posizione GPS ---
 def aggiorna_posizione(ticket_id, lat, lon):
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
     c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
     conn.commit()
     conn.close()
 
+def aggiorna_stato(ticket_id, stato, notifica_testo=""):
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    c = conn.cursor()
+    c.execute("UPDATE tickets SET Stato=? WHERE ID=?", (stato, ticket_id))
+    if notifica_testo:
+        c.execute("INSERT INTO notifiche (Ticket_ID, Testo) VALUES (?, ?)", (ticket_id, notifica_testo))
+        c.execute("UPDATE tickets SET Ultima_notifica=? WHERE ID=?", (notifica_testo, ticket_id))
+    conn.commit()
+    conn.close()
 
-# --- Recupera ticket attivi ---
 def get_ticket_attivi():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT * FROM tickets WHERE Attivo=1 ORDER BY ID DESC")
-    result = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    return result
+    return rows
 
-
-# --- Recupera ticket storici ---
 def get_ticket_storico():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT * FROM tickets WHERE Attivo=0 ORDER BY Data_chiusura DESC")
-    result = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    return result
+    return rows
 
-
-# --- Recupera notifiche di un ticket ---
 def get_notifiche(ticket_id):
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
-    c.execute("SELECT Testo, Data_invio FROM notifiche WHERE Ticket_ID=? ORDER BY ID DESC", (ticket_id,))
-    result = c.fetchall()
+    c.execute("SELECT Testo, Data FROM notifiche WHERE Ticket_ID=? ORDER BY ID DESC", (ticket_id,))
+    rows = c.fetchall()
     conn.close()
-    return result
-
-
-# --- Inizializza database al primo avvio ---
-init_db()
+    return rows
