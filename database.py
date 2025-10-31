@@ -1,7 +1,9 @@
 import sqlite3
 from datetime import datetime
+import os
 
-DB_FILE = "tickets.db"
+# --- Usa percorso assoluto per DB ---
+DB_FILE = os.path.join(os.path.dirname(__file__), "tickets.db")
 
 # --- Inizializzazione database ---
 def init_db():
@@ -44,28 +46,21 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
-    """
-    Inserisce un nuovo ticket nel database e restituisce l'ID creato.
-    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
         INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (nome, azienda, targa, tipo, destinazione, produttore, rimorchio, lat, lon))
-    ticket_id = c.lastrowid  # ← restituisce subito l'ID del nuovo ticket
+    ticket_id = c.lastrowid
     conn.commit()
     conn.close()
     return ticket_id
 
 # --- Aggiorna stato e notifica ---
 def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
-    """
-    Aggiorna lo stato del ticket e aggiunge una notifica associata.
-    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -88,25 +83,19 @@ def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
         c.execute("UPDATE tickets SET Stato=?, Ultima_notifica=? WHERE ID=?",
                   (nuovo_stato, notifica_testo, ticket_id))
 
-    # Inserisci la notifica nello storico
     if notifica_testo:
         c.execute("INSERT INTO notifiche (Ticket_ID, Testo) VALUES (?, ?)", (ticket_id, notifica_testo))
 
     conn.commit()
     conn.close()
 
-
 # --- Aggiorna posizione GPS ---
 def aggiorna_posizione(ticket_id, lat, lon):
-    """
-    Aggiorna la posizione GPS (lat/lon) di un ticket.
-    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
     conn.commit()
     conn.close()
-
 
 # --- Recupera ticket attivi ---
 def get_ticket_attivi():
@@ -117,7 +106,6 @@ def get_ticket_attivi():
     conn.close()
     return result
 
-
 # --- Recupera ticket storici ---
 def get_ticket_storico():
     conn = sqlite3.connect(DB_FILE)
@@ -126,7 +114,6 @@ def get_ticket_storico():
     result = c.fetchall()
     conn.close()
     return result
-
 
 # --- Recupera notifiche di un ticket ---
 def get_notifiche(ticket_id):
@@ -137,7 +124,5 @@ def get_notifiche(ticket_id):
     conn.close()
     return result
 
-
 # --- Inizializza database ---
 init_db()
-
