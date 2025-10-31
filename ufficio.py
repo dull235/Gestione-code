@@ -47,8 +47,14 @@ def main():
             "Termina Servizio": "Grazie per la visita."
         }
 
+        # --- Ticket Aperti ---
         if view == "Ticket Aperti":
-            tickets = get_ticket_attivi()
+            try:
+                tickets = get_ticket_attivi()
+            except Exception as e:
+                st.error(f"Errore caricamento ticket: {e}")
+                tickets = []
+
             if tickets:
                 df = pd.DataFrame(tickets, columns=[
                     "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
@@ -58,23 +64,44 @@ def main():
                 st.dataframe(df, use_container_width=True)
 
                 selected_id = st.selectbox("Seleziona ticket:", df["ID"])
-                if st.button("CHIAMATA"):
-                    aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                    st.success("Notifica CHIAMATA inviata.")
-                if st.button("SOLLECITO"):
-                    aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                    st.success("Notifica SOLLECITO inviata.")
-                if st.button("ANNULLA"):
-                    aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                    st.warning("Ticket annullato.")
-                if st.button("NON PRESENTATO"):
-                    aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                    st.error("Segnalato come non presentato.")
-                if st.button("TERMINA SERVIZIO"):
-                    aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                    st.success("Ticket terminato.")
 
-                # Mappa
+                col1, col2, col3, col4, col5 = st.columns(5)
+                if col1.button("CHIAMATA"):
+                    try:
+                        aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
+                        st.success("Notifica CHIAMATA inviata.")
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col2.button("SOLLECITO"):
+                    try:
+                        aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
+                        st.success("Notifica SOLLECITO inviata.")
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col3.button("ANNULLA"):
+                    try:
+                        aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
+                        st.warning("Ticket annullato.")
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col4.button("NON PRESENTATO"):
+                    try:
+                        aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
+                        st.error("Segnalato come non presentato.")
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col5.button("TERMINA SERVIZIO"):
+                    try:
+                        aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+                        st.success("Ticket terminato.")
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                # --- Mappa ---
                 st.subheader("📍 Posizione Ticket Attivi")
                 avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
                 avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
@@ -90,9 +117,15 @@ def main():
             else:
                 st.info("Nessun ticket aperto al momento.")
 
+        # --- Storico Ticket ---
         else:
             st.subheader("📜 Storico Ticket")
-            storico = get_ticket_storico()
+            try:
+                storico = get_ticket_storico()
+            except Exception as e:
+                st.error(f"Errore caricamento storico: {e}")
+                storico = []
+
             if storico:
                 df_s = pd.DataFrame(storico, columns=[
                     "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
@@ -102,7 +135,6 @@ def main():
                 st.dataframe(df_s, use_container_width=True)
             else:
                 st.info("Nessun ticket chiuso nello storico.")
-
 
 if __name__ == "__main__":
     main()
