@@ -4,14 +4,12 @@ import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
 
-# --- Configurazione pagina ---
 st.set_page_config(
     page_title="Ufficio Carico/Scarico",
     page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
     layout="wide"
 )
 
-# --- CSS Sfondo ---
 st.markdown("""
 <style>
 .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
@@ -25,13 +23,13 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     st.subheader("🔑 Login Ufficio")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
     if st.button("Accedi"):
-        if username == "admin" and password == "1234":  # <- puoi cambiare credenziali
+        if username == "admin" and password == "1234":
             st.session_state.logged_in = True
             st.success("Login effettuato!")
-            st.experimental_rerun()  # ricarica pagina senza mostrare login
+            st.experimental_rerun()
         else:
             st.error("Username o password errati")
 else:
