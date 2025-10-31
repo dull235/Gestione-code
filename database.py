@@ -1,14 +1,15 @@
 import sqlite3
 from datetime import datetime
+import os
 
-DB_FILE = "tickets.db"
+# Percorso assoluto del database condiviso
+DB_FILE = os.path.join(os.path.dirname(__file__), "tickets.db")
 
 # --- Inizializzazione database ---
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Tabella principale ticket
     c.execute("""
         CREATE TABLE IF NOT EXISTS tickets (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +32,6 @@ def init_db():
         )
     """)
 
-    # Tabella notifiche (storico)
     c.execute("""
         CREATE TABLE IF NOT EXISTS notifiche (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +43,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-init_db()
+
 
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
@@ -57,6 +57,7 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
     conn.commit()
     conn.close()
     return ticket_id
+
 
 # --- Aggiorna stato e notifica ---
 def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
@@ -127,6 +128,6 @@ def get_notifiche(ticket_id):
     conn.close()
     return result
 
-# --- Inizializza database all'avvio ---
-init_db()
 
+# --- Inizializza database al primo avvio ---
+init_db()
