@@ -47,10 +47,10 @@ def init_db():
 
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect("tickets.db)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon)
+        INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon, Data_creazione)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (nome, azienda, targa, tipo, destinazione, produttore, rimorchio, lat, lon))
     conn.commit()
@@ -126,3 +126,4 @@ def get_notifiche(ticket_id):
 
 # Inizializza DB a import
 init_db()
+
