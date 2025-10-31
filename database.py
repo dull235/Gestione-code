@@ -43,7 +43,7 @@ def init_db():
     conn.close()
 
 # Inizializza il DB se non esiste
-if not os.path.exists(DB_FILE):
+
     init_db()
 
 # --- Funzioni CRUD ---
@@ -99,3 +99,4 @@ def get_notifiche(ticket_id):
     rows = c.fetchall()
     conn.close()
     return rows
+
