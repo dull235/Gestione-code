@@ -4,7 +4,6 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-
 def main():
     # --- Imposta pagina e CSS ---
     st.set_page_config(
@@ -39,7 +38,10 @@ def main():
             location = get_geolocation()
             if location:
                 lat, lon = location['latitude'], location['longitude']
-                aggiorna_posizione(ticket_id, lat, lon)
+                try:
+                    aggiorna_posizione(ticket_id, lat, lon)
+                except Exception as e:
+                    st.warning(f"Errore aggiornamento posizione: {e}")
             time.sleep(10)
 
     # --- Schermata iniziale ---
@@ -69,27 +71,30 @@ def main():
             if not nome or not azienda or not targa:
                 st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
             else:
-                ticket_id = inserisci_ticket(
-                    nome=nome,
-                    azienda=azienda,
-                    targa=targa,
-                    tipo=tipo,
-                    destinazione=destinazione,
-                    produttore=produttore,
-                    rimorchio=int(rimorchio)
-                )
-                st.session_state.ticket_id = ticket_id
+                try:
+                    ticket_id = inserisci_ticket(
+                        nome=nome,
+                        azienda=azienda,
+                        targa=targa,
+                        tipo=tipo,
+                        destinazione=destinazione,
+                        produttore=produttore,
+                        rimorchio=int(rimorchio)
+                    )
+                    st.session_state.ticket_id = ticket_id
 
-                threading.Thread(
-                    target=auto_update_position,
-                    args=(ticket_id,),
-                    daemon=True
-                ).start()
+                    threading.Thread(
+                        target=auto_update_position,
+                        args=(ticket_id,),
+                        daemon=True
+                    ).start()
 
-                st.session_state.modalita = "notifiche"
-                st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
-                time.sleep(1)
-                st.rerun()
+                    st.session_state.modalita = "notifiche"
+                    st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Errore invio ticket: {e}")
 
     # --- Notifiche ---
     elif st.session_state.modalita == "notifiche":
@@ -98,7 +103,11 @@ def main():
         st.subheader("📢 Notifiche ricevute")
 
         st_autorefresh(interval=3000, key="auto_refresh_notifiche")
-        notifiche = get_notifiche(ticket_id)
+        try:
+            notifiche = get_notifiche(ticket_id)
+        except Exception as e:
+            st.error(f"Errore recupero notifiche: {e}")
+            notifiche = []
 
         if notifiche:
             ultima_notifica, ultima_data = notifiche[0]
@@ -119,7 +128,6 @@ def main():
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
-
 
 if __name__ == "__main__":
     main()
