@@ -1,10 +1,9 @@
 import sqlite3
 from datetime import datetime
-import os
 
-# Percorso assoluto al database (cartella corrente)
-DB_FILE = os.path.join(os.getcwd(), "tickets.db")
+DB_FILE = "tickets.db"
 
+# --- Inizializzazione database ---
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -45,35 +44,41 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 # --- Inserisci nuovo ticket ---
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
-    conn = sqlite3.connect("tickets.db)
+    """
+    Inserisce un nuovo ticket nel database.
+    """
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon, Data_creazione)
+        INSERT INTO tickets (Nome, Azienda, Targa, Tipo, Destinazione, Produttore, Rimorchio, Lat, Lon)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (nome, azienda, targa, tipo, destinazione, produttore, rimorchio, lat, lon))
     conn.commit()
     conn.close()
 
+
 # --- Aggiorna stato e notifica ---
 def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
+    """
+    Aggiorna lo stato del ticket e aggiunge una notifica associata.
+    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if nuovo_stato == "Chiamato":
         c.execute("UPDATE tickets SET Stato=?, Data_chiamata=?, Ultima_notifica=? WHERE ID=?",
                   (nuovo_stato, now, notifica_testo, ticket_id))
     elif nuovo_stato == "Terminato":
-        # Calcola durata servizio
         c.execute("SELECT Data_chiamata FROM tickets WHERE ID=?", (ticket_id,))
-        start = c.fetchone()[0]
+        start = c.fetchone()
         durata = None
-        if start:
+        if start and start[0]:
             durata = str(datetime.strptime(now, "%Y-%m-%d %H:%M:%S") -
-                         datetime.strptime(start, "%Y-%m-%d %H:%M:%S"))
+                         datetime.strptime(start[0], "%Y-%m-%d %H:%M:%S"))
         c.execute("""UPDATE tickets
                      SET Stato=?, Data_chiusura=?, Durata_servizio=?, Attivo=0, Ultima_notifica=?
                      WHERE ID=?""",
@@ -82,40 +87,47 @@ def aggiorna_stato(ticket_id, nuovo_stato, notifica_testo=None):
         c.execute("UPDATE tickets SET Stato=?, Ultima_notifica=? WHERE ID=?",
                   (nuovo_stato, notifica_testo, ticket_id))
 
-    # Inserisci notifica nello storico
+    # Inserisci la notifica nello storico
     if notifica_testo:
         c.execute("INSERT INTO notifiche (Ticket_ID, Testo) VALUES (?, ?)", (ticket_id, notifica_testo))
 
     conn.commit()
     conn.close()
 
-# --- Aggiorna posizione lat/lon ---
+
+# --- Aggiorna posizione GPS ---
 def aggiorna_posizione(ticket_id, lat, lon):
+    """
+    Aggiorna la posizione GPS (lat/lon) di un ticket.
+    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("UPDATE tickets SET Lat=?, Lon=? WHERE ID=?", (lat, lon, ticket_id))
     conn.commit()
     conn.close()
 
+
 # --- Recupera ticket attivi ---
 def get_ticket_attivi():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT * FROM tickets WHERE Attivo=1")
+    c.execute("SELECT * FROM tickets WHERE Attivo=1 ORDER BY ID DESC")
     result = c.fetchall()
     conn.close()
     return result
 
-# --- Recupera ticket storico ---
+
+# --- Recupera ticket storici ---
 def get_ticket_storico():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT * FROM tickets WHERE Attivo=0")
+    c.execute("SELECT * FROM tickets WHERE Attivo=0 ORDER BY Data_chiusura DESC")
     result = c.fetchall()
     conn.close()
     return result
 
-# --- Recupera notifiche per ticket ---
+
+# --- Recupera notifiche di un ticket ---
 def get_notifiche(ticket_id):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -124,6 +136,6 @@ def get_notifiche(ticket_id):
     conn.close()
     return result
 
-# Inizializza DB a import
-init_db()
 
+# --- Inizializza database ---
+init_db()
