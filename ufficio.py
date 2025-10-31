@@ -3,12 +3,9 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
-import os
-from database import DB_FILE
-import streamlit as st
 
-st.write("Percorso DB:", DB_FILE)
-st.write("Esiste?", os.path.exists(DB_FILE))
+def main():
+ 
 
 
 st.set_page_config(page_title="Ufficio Carico/Scarico", layout="wide")
@@ -95,4 +92,6 @@ else:
             st.download_button("📤 Esporta Storico CSV", csv, "storico_tickets.csv", "text/csv")
         else:
             st.info("Nessun ticket chiuso presente nello storico.")
+if __name__ == "__main__":
+    main()
 
