@@ -82,7 +82,7 @@ elif st.session_state.modalita == "form":
             produttore=produttore,
             rimorchio=int(rimorchio)
        )
-       st.session_state.ticket_id = ticket_id
+        st.session_state.ticket_id = ticket_id
 
             # Avvia thread posizione
             threading.Thread(
@@ -124,5 +124,6 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
