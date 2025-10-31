@@ -74,18 +74,18 @@ elif st.session_state.modalita == "form":
         else:
             # Inserimento ticket, ritorna ID
            st.session_state.ticket_id = inserisci_ticket(
-            nome=nome,
-            azienda=azienda,
-            targa=targa,
-            tipo=tipo,
-            destinazione=destinazione,
-            produttore=produttore,
-            rimorchio=int(rimorchio)
-       )
-        st.session_state.ticket_id = ticket_id
+                nome=nome,
+                azienda=azienda,
+                targa=targa,
+                tipo=tipo,
+                destinazione=destinazione,
+                produttore=produttore,
+                rimorchio=int(rimorchio)
+           )
+           st.session_state.ticket_id = ticket_id
 
             # Avvia thread posizione
-            threading.Thread(
+           threading.Thread(
                 target=auto_update_position,
                 args=(ticket_id,),
                 daemon=True
@@ -124,6 +124,7 @@ elif st.session_state.modalita == "notifiche":
         st.session_state.ticket_id = None
         st.session_state.modalita = "iniziale"
         st.rerun()
+
 
 
 
