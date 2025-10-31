@@ -1,13 +1,29 @@
 import streamlit as st
-from autista import main as autista_app
-from ufficio import main as ufficio_app
+import autista
+import ufficio
 
-st.set_page_config(page_title="Gestione Code", layout="wide")
+# --- Impostazioni pagina ---
+st.set_page_config(
+    page_title="Gestione Code",
+    page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
+    layout="wide"
+)
 
+# --- Sidebar principale ---
 st.sidebar.title("🚚 Gestione Code")
-pagina = st.sidebar.radio("Seleziona la modalità:", ["Autista", "Ufficio"])
+page = st.sidebar.radio("Seleziona vista:", ["Autista", "Ufficio"])
 
-if pagina == "Autista":
-    autista_app()
-else:
-    ufficio_app()
+# --- Routing tra le due app ---
+if page == "Autista":
+    # Se autista.py ha una funzione main()
+    if hasattr(autista, "main"):
+        autista.main()
+    else:
+        st.write("⚙️ Caricamento pagina Autista...")
+        autista  # fallback
+elif page == "Ufficio":
+    if hasattr(ufficio, "main"):
+        ufficio.main()
+    else:
+        st.write("⚙️ Caricamento pagina Ufficio...")
+        ufficio  # fallback
