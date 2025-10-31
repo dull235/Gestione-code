@@ -11,61 +11,35 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS per sfondo e stile ---
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
-        background-size: cover;
-    }
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.85) !important;
-        padding: 20px;
-        border-radius: 10px;
-        color: black !important;
-    }
-    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label {
-        color: black !important;
-        background-color: rgba(144, 238, 144, 0.9) !important;
-    }
-    .stButton button {
-        background-color: #1976d2;
-        color: white;
-        border-radius: 8px;
-        border: none;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# --- CSS Sfondo ---
+st.markdown("""
+<style>
+.stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
+.main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+</style>
+""", unsafe_allow_html=True)
 
-# --- LOGIN ---
-if "login_success" not in st.session_state:
-    st.session_state.login_success = False
-if not st.session_state.login_success:
-    st.title("🏢 Login Ufficio Carico/Scarico")
+# --- Login semplice ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    st.subheader("🔑 Login Ufficio")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-
-    utenti = {"admin": "admin123", "operatore": "pass123"}
-
-    login_msg = st.empty()  # contenitore per messaggi dinamici
     if st.button("Accedi"):
-        if username in utenti and utenti[username] == password:
-            st.session_state.login_success = True
-            login_msg.success("Login effettuato con successo!")
+        if username == "admin" and password == "1234":  # <- puoi cambiare credenziali
+            st.session_state.logged_in = True
+            st.success("Login effettuato!")
+            st.experimental_rerun()  # ricarica pagina senza mostrare login
         else:
-            login_msg.error("Username o password errati.")
-
-# Blocchi successivi solo se login avvenuto
-if "login_success" in st.session_state and st.session_state.login_success:
-    st.title("🏢 Gestione Ticket Ufficio")
-    # ... qui va tutto il codice ufficio
-
-
+            st.error("Username o password errati")
+else:
+    # --- Sidebar ---
     st.sidebar.title("📋 Menu")
     view = st.sidebar.radio("Seleziona vista:", ["Ticket Aperti", "Storico Ticket"])
+
+    st.title("🏢 Gestione Ticket Ufficio")
 
     notifiche_testi = {
         "Chiamata": "È il tuo turno. Sei pregato di recarti in pesa con il tuo automezzo.",
@@ -86,43 +60,34 @@ if "login_success" in st.session_state and st.session_state.login_success:
             st.dataframe(df, use_container_width=True)
 
             selected_id = st.selectbox("Seleziona ticket:", df["ID"])
-            col1, col2, col3, col4, col5 = st.columns(5)
-
-            with col1:
-                if st.button("CHIAMATA"):
-                    aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                    st.success("Notifica CHIAMATA inviata.")
-            with col2:
-                if st.button("SOLLECITO"):
-                    aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                    st.success("Notifica SOLLECITO inviata.")
-            with col3:
-                if st.button("ANNULLA"):
-                    aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                    st.warning("Ticket annullato.")
-            with col4:
-                if st.button("NON PRESENTATO"):
-                    aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                    st.error("Segnalato come non presentato.")
-            with col5:
-                if st.button("TERMINA SERVIZIO"):
-                    aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                    st.success("Ticket terminato.")
+            if st.button("CHIAMATA"):
+                aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
+                st.success("Notifica CHIAMATA inviata.")
+            if st.button("SOLLECITO"):
+                aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
+                st.success("Notifica SOLLECITO inviata.")
+            if st.button("ANNULLA"):
+                aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
+                st.warning("Ticket annullato.")
+            if st.button("NON PRESENTATO"):
+                aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
+                st.error("Segnalato come non presentato.")
+            if st.button("TERMINA SERVIZIO"):
+                aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+                st.success("Ticket terminato.")
 
             # Mappa in tempo reale
             st.subheader("📍 Posizione Ticket Attivi")
             avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
             avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
             m = folium.Map(location=[avg_lat, avg_lon], zoom_start=6)
-
             for _, r in df.iterrows():
-                if pd.notna(r["Lat"]) and pd.notna(r["Lon"]):
+                if r["Lat"] and r["Lon"]:
                     folium.Marker(
                         [r["Lat"], r["Lon"]],
                         popup=f"{r['Nome']} - {r['Tipo']}",
                         tooltip=r["Stato"]
                     ).add_to(m)
-
             st_folium(m, height=500, width='100%')
         else:
             st.info("Nessun ticket aperto al momento.")
@@ -141,5 +106,3 @@ if "login_success" in st.session_state and st.session_state.login_success:
             st.download_button("📤 Esporta Storico CSV", csv, "storico_tickets.csv", "text/csv")
         else:
             st.info("Nessun ticket chiuso presente nello storico.")
-
-
