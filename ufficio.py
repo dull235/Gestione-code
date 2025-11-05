@@ -57,13 +57,13 @@ def main():
 
             if tickets:
                 df = pd.DataFrame(tickets, columns=[
-                    "id", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
+                    "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
                     "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
                     "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
                 ])
                 st.dataframe(df, use_container_width=True)
 
-                selected_id = st.selectbox("Seleziona ticket:", df["id"])
+                selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
                 col1, col2, col3, col4, col5 = st.columns(5)
                 if col1.button("CHIAMATA"):
@@ -138,4 +138,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
