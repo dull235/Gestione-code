@@ -57,13 +57,13 @@ def main():
 
             if tickets:
                 df = pd.DataFrame(tickets, columns=[
-                    "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
+                    "id", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
                     "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
                     "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
                 ])
                 st.dataframe(df, use_container_width=True)
 
-                selected_id = st.selectbox("Seleziona ticket:", df["ID"])
+                selected_id = st.selectbox("Seleziona ticket:", df["id"])
 
                 col1, col2, col3, col4, col5 = st.columns(5)
                 if col1.button("CHIAMATA"):
@@ -128,7 +128,7 @@ def main():
 
             if storico:
                 df_s = pd.DataFrame(storico, columns=[
-                    "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
+                    "id", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
                     "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
                     "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
                 ])
@@ -138,3 +138,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
