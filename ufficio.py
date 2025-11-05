@@ -128,7 +128,7 @@ def main():
 
             if storico:
                 df_s = pd.DataFrame(storico, columns=[
-                    "id", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
+                    "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
                     "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
                     "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
                 ])
@@ -138,5 +138,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
