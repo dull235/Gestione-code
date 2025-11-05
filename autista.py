@@ -81,6 +81,11 @@ def main():
                         produttore=produttore,
                         rimorchio=int(rimorchio)
                     )
+
+                    # 🔧 Controllo compatibilità colonna "ID"
+                    if isinstance(ticket_id, dict) and "ID" in ticket_id:
+                        ticket_id = ticket_id["ID"]
+
                     st.session_state.ticket_id = ticket_id
 
                     threading.Thread(
