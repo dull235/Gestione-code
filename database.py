@@ -27,16 +27,16 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
     response = supabase.table("tickets").insert(data).execute()
     if response.error:
         raise Exception(f"Errore inserimento ticket: {response.error.message}")
-    return response.data[0]["id"]
+    return response.data[0]["ID"]  # <-- cambiato da "id" a "ID"
 
 def aggiorna_posizione(ticket_id, lat, lon):
-    response = supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("id", ticket_id).execute()
+    response = supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id).execute()  # <-- ID
     if response.error:
         raise Exception(f"Errore aggiornamento posizione: {response.error.message}")
 
 def aggiorna_stato(ticket_id, stato, notifica_testo=""):
     updates = {"Stato": stato}
-    response = supabase.table("tickets").update(updates).eq("id", ticket_id).execute()
+    response = supabase.table("tickets").update(updates).eq("ID", ticket_id).execute()  # <-- ID
     if response.error:
         raise Exception(f"Errore aggiornamento stato: {response.error.message}")
     
@@ -46,10 +46,10 @@ def aggiorna_stato(ticket_id, stato, notifica_testo=""):
             "Testo": notifica_testo,
             "Data": datetime.utcnow().isoformat()
         }).execute()
-        supabase.table("tickets").update({"Ultima_notifica": notifica_testo}).eq("id", ticket_id).execute()
+        supabase.table("tickets").update({"Ultima_notifica": notifica_testo}).eq("ID", ticket_id).execute()  # <-- ID
 
 def get_ticket_attivi():
-    response = supabase.table("tickets").select("*").eq("Attivo", True).order("id", desc=True).execute()
+    response = supabase.table("tickets").select("*").eq("Attivo", True).order("ID", desc=True).execute()  # <-- ID
     if response.error:
         raise Exception(f"Errore caricamento ticket attivi: {response.error.message}")
     return response.data
@@ -61,8 +61,7 @@ def get_ticket_storico():
     return response.data
 
 def get_notifiche(ticket_id):
-    response = supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("id", desc=True).execute()
+    response = supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True).execute()  # <-- ID
     if response.error:
         raise Exception(f"Errore caricamento notifiche: {response.error.message}")
     return response.data
-
