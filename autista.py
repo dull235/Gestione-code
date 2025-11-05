@@ -13,13 +13,36 @@ def main():
     )
 
     st.markdown("""
-    <style>
-    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: contain; }
-    .main > div { background-color: rgba(255, 255, 255, 0.8) !important; padding: 20px; border-radius: 10px; color: black !important; }
-    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
-    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+.stApp { 
+    background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; 
+    background-size: contain; 
+}
+.main > div { 
+    background-color: rgba(255, 255, 255, 0.8) !important; 
+    padding: 20px; 
+    border-radius: 10px; 
+    color: black !important; 
+}
+.stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { 
+    color: black !important; 
+    background-color: rgba(144, 238, 144, 0.9) !important; 
+}
+.stButton button { 
+    background-color: #1976d2; 
+    color: white; 
+    border-radius: 8px; 
+    border: none; 
+}
+
+/* --- Nuovo: rendere visibili le notifiche --- */
+.stInfo, .stSuccess, .stWarning, .stError {
+    color: black !important;
+    background-color: #e0f7e0 !important;  /* verde chiaro */
+}
+</style>
+""", unsafe_allow_html=True)
+
 
     st.title("Pagina Autisti")
     st.write("Gestisci i dati relativi agli autisti e alle code.")
@@ -136,3 +159,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
