@@ -27,7 +27,13 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
     response = supabase.table("tickets").insert(data).execute()
     if response.error:
         raise Exception(f"Errore inserimento ticket: {response.error.message}")
-    return response.data[0]["ID"]  # <-- cambiato da "id" a "ID"
+        # 🔧 Restituisci direttamente l'ID come numero
+    if response.data and isinstance(response.data[0], dict):
+        if "id" in response.data[0]:
+            return response.data[0]["id"]
+        elif "ID" in response.data[0]:
+            return response.data[0]["ID"]
+    return None
 
 def aggiorna_posizione(ticket_id, lat, lon):
     response = supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id).execute()  # <-- ID
@@ -65,3 +71,4 @@ def get_notifiche(ticket_id):
     if response.error:
         raise Exception(f"Errore caricamento notifiche: {response.error.message}")
     return response.data
+
