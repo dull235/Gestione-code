@@ -144,7 +144,7 @@ def main():
             st.divider()
             st.write("🔁 Storico ultime notifiche:")
             for testo, data in notifiche[1:5]:
-                st.info(f"🕓 {data} — {testo}")
+                st.write(f"🕓 {data} — {testo}")
         else:
             st.write("Nessuna notifica al momento.")
 
@@ -159,4 +159,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
