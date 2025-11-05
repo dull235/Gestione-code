@@ -42,7 +42,7 @@ def aggiorna_stato(ticket_id, stato, notifica_testo=""):
     
     if notifica_testo:
         supabase.table("notifiche").insert({
-            "Ticket_ID": ticket_id,
+            "Ticket_id": ticket_id,
             "Testo": notifica_testo,
             "Data": datetime.utcnow().isoformat()
         }).execute()
@@ -61,7 +61,8 @@ def get_ticket_storico():
     return response.data
 
 def get_notifiche(ticket_id):
-    response = supabase.table("notifiche").select("Testo, Data").eq("Ticket_ID", ticket_id).order("ID", desc=True).execute()
+    response = supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("id", desc=True).execute()
     if response.error:
         raise Exception(f"Errore caricamento notifiche: {response.error.message}")
     return response.data
+
