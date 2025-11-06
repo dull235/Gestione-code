@@ -122,25 +122,26 @@ def main():
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        # --- Richiesta GPS automatica lato browser ---
+        # --- Richiesta GPS lato browser tramite watchPosition ---
         gps_script = """
         <script>
-        navigator.geolocation.getCurrentPosition(
+        navigator.geolocation.watchPosition(
             function(pos) {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
                 const query = new URLSearchParams(window.location.search);
                 query.set("lat", lat);
                 query.set("lon", lon);
-                window.location.search = query.toString();
+                window.history.replaceState({}, '', `${window.location.pathname}?${query.toString()}`);
             },
             function(err) {
                 console.warn("Errore GPS: " + err.message);
-            }
+            },
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
         );
         </script>
         """
-        st.markdown(gps_script, unsafe_allow_html=True)
+        st.components.v1.html(gps_script, height=0)
 
         # --- Aggiorna posizione lato server ---
         params = st.experimental_get_query_params()
