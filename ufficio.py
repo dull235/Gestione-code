@@ -22,8 +22,6 @@ def main():
     # Login semplice
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
-    if "ticket_update" not in st.session_state:
-        st.session_state.ticket_update = 0  # contatore per forzare refresh
 
     if not st.session_state.logged_in:
         st.subheader("🔑 Login Ufficio")
@@ -33,7 +31,6 @@ def main():
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
                 st.success("Login effettuato!")
-                st.session_state.ticket_update += 1
             else:
                 st.error("Username o password errati")
         return
@@ -57,15 +54,17 @@ def main():
         except Exception as e:
             st.error(f"Errore caricamento ticket: {e}")
             tickets = []
+        # Filtra solo ticket non terminati
         tickets_attivi = [t for t in tickets if t["Stato"] not in ["Terminato", "Annullato", "Non Presentato"]]
         return tickets_attivi
 
+    # Carica i ticket attivi
     tickets_attivi = carica_ticket()
 
     if tickets_attivi:
         df = pd.DataFrame(tickets_attivi)
 
-        # Riempie le date mancanti
+        # Riempie le date vuote
         for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
             if col in df.columns:
                 df[col] = df[col].apply(lambda x: x if pd.notna(x) else "-")
@@ -76,24 +75,32 @@ def main():
         selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
         col1, col2, col3, col4, col5 = st.columns(5)
+        updated = False  # flag per ricaricare tabella
+
         if col1.button("CHIAMATA"):
             aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-            st.session_state.ticket_update += 1
+            updated = True
         if col2.button("SOLLECITO"):
             aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-            st.session_state.ticket_update += 1
+            updated = True
         if col3.button("ANNULLA"):
             aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-            st.session_state.ticket_update += 1
+            updated = True
         if col4.button("NON PRESENTATO"):
             aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-            st.session_state.ticket_update += 1
+            updated = True
         if col5.button("TERMINA SERVIZIO"):
             aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-            st.session_state.ticket_update += 1
+            updated = True
 
-        # Trigger per forzare aggiornamento tabella
-        st.experimental_data_editor(df, key=f"refresh_{st.session_state.ticket_update}", disabled=True)
+        # Se un ticket è stato aggiornato, ricarica i ticket attivi
+        if updated:
+            tickets_attivi = carica_ticket()
+            df = pd.DataFrame(tickets_attivi)
+            for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
+                if col in df.columns:
+                    df[col] = df[col].apply(lambda x: x if pd.notna(x) else "-")
+            st.dataframe(df, use_container_width=True)
 
         # Mappa Folium
         st.subheader("📍 Posizione Ticket")
@@ -112,6 +119,7 @@ def main():
 
     else:
         st.info("Nessun ticket attivo al momento.")
+
 
 if __name__ == "__main__":
     main()
