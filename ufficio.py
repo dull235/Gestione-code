@@ -14,7 +14,7 @@ def main():
 
     st.markdown("""
     <style>
-    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
+    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: container; }
     .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -109,5 +109,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
