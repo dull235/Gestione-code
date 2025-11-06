@@ -43,7 +43,7 @@ def main():
 
     if time.time() - st.session_state.last_refresh > 10:
         st.session_state.last_refresh = time.time()
-        st.experimental_rerun()  # ricarica solo per aggiornare i dati, Streamlit 1.25+ supporta st.rerun()
+        st.rerun()  # ricarica solo per aggiornare i dati, Streamlit 1.25+ supporta st.rerun()
 
     st.sidebar.title("📋 Menu")
     st.title("🏢 Gestione Ticket Ufficio")
@@ -112,3 +112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
