@@ -67,7 +67,7 @@ def main():
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
-            st.experimental_rerun()
+            st.rerun()
 
     # --- Form di inserimento ticket ---
     elif st.session_state.modalita == "form":
@@ -115,7 +115,7 @@ def main():
                         daemon=True
                     ).start()
 
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
@@ -150,12 +150,13 @@ def main():
 
         col1, col2 = st.columns(2)
         if col1.button("🔄 Aggiorna ora"):
-            st.experimental_rerun()
+            st.rerun()
         if col2.button("❌ Chiudi ticket locale"):
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
-            st.experimental_rerun()
+            st.rerun()
 
 
 if __name__ == "__main__":
     main()
+
