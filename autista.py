@@ -2,7 +2,6 @@ import streamlit as st
 import threading
 import time
 from streamlit_autorefresh import st_autorefresh
-from streamlit_geolocation import geolocation
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
 def main():
@@ -62,13 +61,34 @@ def main():
                     st.warning(f"Errore aggiornamento posizione: {e}")
             time.sleep(10)  # ogni 10 secondi
 
-    # --- Geolocalizzazione tramite Streamlit-Geolocation ---
-    posizione = geolocation()
-    if posizione:
-        lat = posizione.get("lat", 0.0)
-        lon = posizione.get("lon", 0.0)
-        if lat != 0.0 and lon != 0.0:
+    # --- Ottieni lat/lon dai parametri della query string ---
+    params = st.experimental_get_query_params()
+    if "lat" in params and "lon" in params:
+        try:
+            lat = float(params["lat"][0])
+            lon = float(params["lon"][0])
             st.session_state.posizione_attuale = (lat, lon)
+        except:
+            pass
+    # --- Se non disponibili, richiedi geolocalizzazione via JS ---
+    elif st.session_state.posizione_attuale == (0.0, 0.0):
+        st.markdown("""
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.location.search = query.toString();
+            },
+            function(err) {
+                console.warn("Errore GPS: " + err.message);
+            }
+        );
+        </script>
+        """, unsafe_allow_html=True)
 
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
