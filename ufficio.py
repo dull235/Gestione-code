@@ -3,6 +3,7 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
+import math
 
 def main():
     st.set_page_config(
@@ -18,7 +19,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    # --- Login ---
+    # Login semplice
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
@@ -30,7 +31,7 @@ def main():
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
                 st.success("Login effettuato!")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Username o password errati")
         return
@@ -48,7 +49,6 @@ def main():
         "Termina Servizio": "Grazie per la visita."
     }
 
-    # --- Ticket Aperti ---
     if view == "Ticket Aperti":
         try:
             tickets = get_ticket_attivi()
@@ -57,71 +57,42 @@ def main():
             tickets = []
 
         if tickets:
-            df = pd.DataFrame(tickets, columns=[
-                "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
-                "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
-                "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
-            ])
+            df = pd.DataFrame(tickets)
             st.dataframe(df, use_container_width=True)
 
             selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
-                try:
-                    aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                    st.success("Notifica CHIAMATA inviata.")
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
+                aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
             if col2.button("SOLLECITO"):
-                try:
-                    aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                    st.success("Notifica SOLLECITO inviata.")
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
+                aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
             if col3.button("ANNULLA"):
-                try:
-                    aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                    st.warning("Ticket annullato.")
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
+                aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
             if col4.button("NON PRESENTATO"):
-                try:
-                    aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                    st.error("Segnalato come non presentato.")
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
+                aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
             if col5.button("TERMINA SERVIZIO"):
-                try:
-                    aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                    st.success("Ticket terminato e spostato nello storico.")
-                    st.experimental_rerun()  # aggiorna la vista dei ticket
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
+                aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
 
-            # --- Mappa ---
-            st.subheader("📍 Posizione Ticket Attivi")
-            avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
-            avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
-            m = folium.Map(location=[avg_lat, avg_lon], zoom_start=6)
-            for _, r in df.iterrows():
-                if r["Lat"] and r["Lon"]:
-                    folium.Marker(
-                        [r["Lat"], r["Lon"]],
-                        popup=f"{r['Nome']} - {r['Tipo']}",
-                        tooltip=r["Stato"]
-                    ).add_to(m)
-            st_folium(m, height=500, width='100%')
+            # Mappa Folium
+            st.subheader("📍 Posizione Ticket")
+            m = folium.Map(location=[45.5, 9.0], zoom_start=8)
+            for r in tickets:
+                lat = r.get("Lat")
+                lon = r.get("Lon")
+                # Controllo NaN
+                if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
+                    continue
+                folium.Marker(
+                    [lat, lon],
+                    popup=f"{r['Nome']} - {r['Tipo']}",
+                    tooltip=r["Stato"]
+                ).add_to(m)
+            st_data = st_folium(m, width=700, height=500)
         else:
-            st.info("Nessun ticket aperto al momento.")
+            st.info("Nessun ticket attivo al momento.")
 
-    # --- Storico Ticket ---
-    else:
-        st.subheader("📜 Storico Ticket")
+    elif view == "Storico Ticket":
         try:
             storico = get_ticket_storico()
         except Exception as e:
@@ -129,19 +100,11 @@ def main():
             storico = []
 
         if storico:
-            df_s = pd.DataFrame(storico, columns=[
-                "ID", "Nome", "Azienda", "Targa", "Rimorchio", "Tipo", "Destinazione",
-                "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
-                "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
-            ])
-            # Mostra durata servizio in formato leggibile (minuti -> hh:mm)
-            if "Durata_servizio" in df_s.columns:
-                df_s["Durata_servizio"] = df_s["Durata_servizio"].apply(
-                    lambda x: f"{int(x//60)}h {int(x%60)}m" if pd.notnull(x) else ""
-                )
-            st.dataframe(df_s, use_container_width=True)
+            df_storico = pd.DataFrame(storico)
+            st.dataframe(df_storico, use_container_width=True)
         else:
-            st.info("Nessun ticket chiuso nello storico.")
+            st.info("Nessun ticket storico disponibile.")
+
 
 if __name__ == "__main__":
     main()
