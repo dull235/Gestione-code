@@ -14,13 +14,24 @@ def main():
         layout="wide"
     )
 
+    # --- Sfondo personalizzato ---
     st.markdown("""
     <style>
-    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
-    .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .stApp { 
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
+        no-repeat center center fixed; 
+        background-size: cover; 
+    }
+    .main > div { 
+        background-color: rgba(255, 255, 255, 0.85) !important; 
+        padding: 20px; 
+        border-radius: 10px; 
+        color: black !important; 
+    }
     </style>
     """, unsafe_allow_html=True)
 
+    # --- Aggiornamento automatico ---
     st_autorefresh(interval=5000, key="refresh")
 
     if "logged_in" not in st.session_state:
@@ -85,21 +96,38 @@ def main():
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
                 st.rerun()
 
-            # --- Mappa Folium con icone autisti ---
-            st.subheader("📍 Posizione Ticket")
-            m = folium.Map(location=[45.5, 9.0], zoom_start=8)
+            # --- Mappa Folium centrata sul primo ticket valido ---
+            lat_init, lon_init = 45.5, 9.0
+            for t in tickets:
+                lat = t.get("Lat")
+                lon = t.get("Lon")
+                if lat is not None and lon is not None and not math.isnan(lat) and not math.isnan(lon):
+                    lat_init, lon_init = lat, lon
+                    break
+
+            m = folium.Map(location=[lat_init, lon_init], zoom_start=8)
+
+            # --- Aggiungi marker per tutti i ticket con LAT/LON ---
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
                 if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
                     continue
+                popup_text = f"""
+                <b>ID:</b> {r['ID']}<br>
+                <b>Nome:</b> {r['Nome']}<br>
+                <b>Tipo:</b> {r['Tipo']}<br>
+                <b>Stato:</b> {r['Stato']}
+                """
                 folium.Marker(
                     [lat, lon],
-                    popup=f"{r['Nome']} - {r['Tipo']}",
-                    tooltip=f"{r['Stato']}",
+                    popup=popup_text,
+                    tooltip=f"{r['Nome']} - {r['Tipo']}",
                     icon=folium.Icon(color="blue", icon="truck", prefix="fa")
                 ).add_to(m)
-            st_data = st_folium(m, width=700, height=500)
+
+            st.subheader("📍 Posizione Ticket")
+            st_data = st_folium(m, width=1200, height=700)
         else:
             st.info("Nessun ticket attivo al momento.")
 
