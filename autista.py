@@ -4,10 +4,6 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-# Nuovo: libreria per mappa
-from streamlit_folium import st_folium
-import folium
-
 def main():
     st.set_page_config(
         page_title="Gestione Code - Autisti",
@@ -64,7 +60,7 @@ def main():
                     aggiorna_posizione(ticket_id, lat, lon)
                 except Exception as e:
                     st.warning(f"Errore aggiornamento posizione: {e}")
-            time.sleep(10)
+            time.sleep(10)  # ogni 10 secondi
 
     # --- Schermata iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -117,7 +113,7 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
-    # --- Schermata notifiche con mappa ---
+    # --- Schermata notifiche (senza mappa) ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -126,56 +122,35 @@ def main():
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        # --- Pulsante aggiornamento posizione GPS ---
-        if st.button("📍 Aggiorna Posizione GPS"):
-            get_location = """
-            <script>
-            navigator.geolocation.getCurrentPosition(
-                function(pos) {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const query = new URLSearchParams(window.location.search);
-                    query.set("lat", lat);
-                    query.set("lon", lon);
-                    window.location.search = query.toString();
-                },
-                function(err) {
-                    alert("Errore GPS: " + err.message);
-                }
-            );
-            </script>
-            """
-            st.markdown(get_location, unsafe_allow_html=True)
+        # --- Richiesta GPS automatica lato browser ---
+        gps_script = """
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.location.search = query.toString();
+            },
+            function(err) {
+                console.warn("Errore GPS: " + err.message);
+            }
+        );
+        </script>
+        """
+        st.markdown(gps_script, unsafe_allow_html=True)
 
-        # Legge parametri GPS
+        # --- Aggiorna posizione lato server ---
         params = st.experimental_get_query_params()
         try:
             lat = float(params.get("lat", [0])[0])
             lon = float(params.get("lon", [0])[0])
             if lat != 0 and lon != 0:
                 st.session_state.posizione_attuale = (lat, lon)
-                aggiorna_posizione(ticket_id, lat, lon)
         except Exception:
             pass
-
-        # --- Mostra mappa con marker ---
-        st.markdown("### 🗺️ Posizione attuale su mappa")
-        if st.session_state.posizione_attuale:
-            lat, lon = st.session_state.posizione_attuale
-        else:
-            # Coordinate di default (es. Italia)
-            lat, lon = 41.9, 12.5
-
-        mappa = folium.Map(location=[lat, lon], zoom_start=12)
-        folium.Marker(
-            location=[lat, lon],
-            icon=folium.CustomIcon(
-                "https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
-                icon_size=(50, 50)
-            ),
-            tooltip="Posizione Autista"
-        ).add_to(mappa)
-        st_data = st_folium(mappa, width=700, height=500)
 
         # --- Mostra notifiche ---
         try:
@@ -206,7 +181,6 @@ def main():
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
-
 
 if __name__ == "__main__":
     main()
