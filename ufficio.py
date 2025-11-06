@@ -107,26 +107,37 @@ def main():
 
             m = folium.Map(location=[lat_init, lon_init], zoom_start=8)
 
-            # --- Aggiungi marker per tutti i ticket con LAT/LON ---
+            # --- Marker ticket con LAT/LON aggiornati ---
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
                 if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
                     continue
+
                 popup_text = f"""
                 <b>ID:</b> {r['ID']}<br>
                 <b>Nome:</b> {r['Nome']}<br>
                 <b>Tipo:</b> {r['Tipo']}<br>
-                <b>Stato:</b> {r['Stato']}
+                <b>Stato:</b> {r['Stato']}<br>
+                <b>Ultima posizione aggiornata:</b> {r.get('Data_chiamata','N/D')}
                 """
+
+                color_icon = "blue"
+                if r["Stato"] == "Chiamato":
+                    color_icon = "green"
+                elif r["Stato"] == "Sollecito":
+                    color_icon = "orange"
+                elif r["Stato"] in ["Annullato", "Non Presentato"]:
+                    color_icon = "red"
+
                 folium.Marker(
                     [lat, lon],
                     popup=popup_text,
                     tooltip=f"{r['Nome']} - {r['Tipo']}",
-                    icon=folium.Icon(color="blue", icon="truck", prefix="fa")
+                    icon=folium.Icon(color=color_icon, icon="truck", prefix="fa")
                 ).add_to(m)
 
-            st.subheader("📍 Posizione Ticket")
+            st.subheader("📍 Posizione Ticket Autisti")
             st_data = st_folium(m, width=1200, height=700)
         else:
             st.info("Nessun ticket attivo al momento.")
