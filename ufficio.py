@@ -11,10 +11,11 @@ def main():
         layout="wide"
     )
 
+    # --- Stile personalizzato con sfondo ---
     st.markdown("""
     <style>
     .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
-    .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .main > div { background-color: rgba(255, 255, 255, 0.88) !important; padding: 20px; border-radius: 10px; color: black !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,115 +34,105 @@ def main():
                 st.rerun()
             else:
                 st.error("Username o password errati")
-        return
-
-    st.sidebar.title("📋 Menu")
-    view = st.sidebar.radio("Seleziona vista:", ["Ticket Aperti", "Storico Ticket"])
-    st.title("🏢 Gestione Ticket Ufficio")
-
-    notifiche_testi = {
-        "Chiamata": "È il tuo turno. Sei pregato di recarti in pesa.",
-        "Sollecito": "Sollecito: È il tuo turno. Recati in pesa.",
-        "Annulla": "Attività annullata. Rivolgiti all’ufficio.",
-        "Non Presentato": "Attività annullata per assenza.",
-        "Termina Servizio": "Grazie per la visita."
-    }
-
-    # --- Funzione per ricaricare i ticket ---
-    def carica_ticket():
-        try:
-            tickets = get_ticket_attivi()
-        except Exception as e:
-            st.error(f"Errore caricamento ticket: {e}")
-            tickets = []
-        return tickets
-
-    # --- Ticket Aperti ---
-    if view == "Ticket Aperti":
-        tickets = carica_ticket()
-        if tickets:
-            df = pd.DataFrame(tickets)
-            st.dataframe(df, use_container_width=True)
-
-            selected_id = st.selectbox("Seleziona ticket:", df["ID"])
-
-            col1, col2, col3, col4, col5 = st.columns(5)
-            aggiorna = False  # Flag per aggiornare la tabella dopo azione
-
-            if col1.button("CHIAMATA"):
-                try:
-                    aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                    st.success("Notifica CHIAMATA inviata.")
-                    aggiorna = True
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
-            if col2.button("SOLLECITO"):
-                try:
-                    aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                    st.success("Notifica SOLLECITO inviata.")
-                    aggiorna = True
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
-            if col3.button("ANNULLA"):
-                try:
-                    aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                    st.warning("Ticket annullato.")
-                    aggiorna = True
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
-            if col4.button("NON PRESENTATO"):
-                try:
-                    aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                    st.error("Segnalato come non presentato.")
-                    aggiorna = True
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
-            if col5.button("TERMINA SERVIZIO"):
-                try:
-                    aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                    st.success("Ticket terminato.")
-                    aggiorna = True
-                except Exception as e:
-                    st.error(f"Errore invio notifica: {e}")
-
-            # Ricarica ticket se azione fatta
-            if aggiorna:
-                st.experimental_rerun()
-
-            # --- Mappa ---
-            st.subheader("📍 Posizione Ticket Attivi")
-            avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
-            avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
-            m = folium.Map(location=[avg_lat, avg_lon], zoom_start=6)
-            for _, r in df.iterrows():
-                if r["Lat"] and r["Lon"]:
-                    folium.Marker(
-                        [r["Lat"], r["Lon"]],
-                        popup=f"{r['Nome']} - {r['Tipo']}",
-                        tooltip=r["Stato"]
-                    ).add_to(m)
-            st_folium(m, height=500, width='100%')
-        else:
-            st.info("Nessun ticket aperto al momento.")
-
-    # --- Storico Ticket ---
     else:
-        st.subheader("📜 Storico Ticket")
-        try:
-            storico = get_ticket_storico()
-        except Exception as e:
-            st.error(f"Errore caricamento storico: {e}")
-            storico = []
+        st.sidebar.title("📋 Menu")
+        view = st.sidebar.radio("Seleziona vista:", ["Ticket Aperti", "Storico Ticket"])
 
-        if storico:
-            df_s = pd.DataFrame(storico)
-            st.dataframe(df_s, use_container_width=True)
+        st.title("🏢 Gestione Ticket Ufficio")
+
+        notifiche_testi = {
+            "Chiamata": "È il tuo turno. Sei pregato di recarti in pesa.",
+            "Sollecito": "Sollecito: È il tuo turno. Recati in pesa.",
+            "Annulla": "Attività annullata. Rivolgiti all’ufficio.",
+            "Non Presentato": "Attività annullata per assenza.",
+            "Termina Servizio": "Grazie per la visita."
+        }
+
+        # --- Ticket Aperti ---
+        if view == "Ticket Aperti":
+            try:
+                tickets = get_ticket_attivi()
+            except Exception as e:
+                st.error(f"Errore caricamento ticket: {e}")
+                tickets = []
+
+            if tickets:
+                df = pd.DataFrame(tickets)
+                st.dataframe(df, use_container_width=True)
+
+                selected_id = st.selectbox("Seleziona ticket:", df["ID"])
+
+                col1, col2, col3, col4, col5 = st.columns(5)
+                if col1.button("CHIAMATA"):
+                    try:
+                        aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
+                        st.success("Notifica CHIAMATA inviata.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col2.button("SOLLECITO"):
+                    try:
+                        aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
+                        st.success("Notifica SOLLECITO inviata.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col3.button("ANNULLA"):
+                    try:
+                        aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
+                        st.warning("Ticket annullato.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col4.button("NON PRESENTATO"):
+                    try:
+                        aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
+                        st.error("Segnalato come non presentato.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                if col5.button("TERMINA SERVIZIO"):
+                    try:
+                        aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+                        st.success("Ticket terminato.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore invio notifica: {e}")
+
+                # --- Mappa ---
+                st.subheader("📍 Posizione Ticket Attivi")
+                avg_lat = df["Lat"].mean() if not df["Lat"].isna().all() else 45.0
+                avg_lon = df["Lon"].mean() if not df["Lon"].isna().all() else 9.0
+                m = folium.Map(location=[avg_lat, avg_lon], zoom_start=6)
+                for _, r in df.iterrows():
+                    if r["Lat"] and r["Lon"]:
+                        folium.Marker(
+                            [r["Lat"], r["Lon"]],
+                            popup=f"{r['Nome']} - {r['Tipo']}",
+                            tooltip=r["Stato"]
+                        ).add_to(m)
+                st_folium(m, height=500, width='100%')
+            else:
+                st.info("Nessun ticket aperto al momento.")
+
+        # --- Storico Ticket ---
         else:
-            st.info("Nessun ticket chiuso nello storico.")
+            st.subheader("📜 Storico Ticket")
+            try:
+                storico = get_ticket_storico()
+            except Exception as e:
+                st.error(f"Errore caricamento storico: {e}")
+                storico = []
+
+            if storico:
+                df_s = pd.DataFrame(storico)
+                st.dataframe(df_s, use_container_width=True)
+            else:
+                st.info("Nessun ticket chiuso nello storico.")
 
 if __name__ == "__main__":
     main()
