@@ -88,34 +88,44 @@ def main():
         else:
             produttore = st.text_input("Produttore")
 
-        if st.button("📨 Invia Richiesta"):
-            if not nome or not azienda or not targa:
-                st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
+if st.button("📨 Invia Richiesta"):
+    if not nome or not azienda or not targa:
+        st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
+    else:
+        try:
+            ticket_id = inserisci_ticket(
+                nome=nome,
+                azienda=azienda,
+                targa=targa,
+                tipo=tipo,
+                destinazione=destinazione,
+                produttore=produttore,
+                rimorchio=int(rimorchio)
+            )
+
+            if ticket_id is None:
+                st.error("Errore: impossibile creare il ticket. Controlla il database.")
             else:
-                try:
-                    ticket_id = inserisci_ticket(
-                        nome=nome,
-                        azienda=azienda,
-                        targa=targa,
-                        tipo=tipo,
-                        destinazione=destinazione,
-                        produttore=produttore,
-                        rimorchio=int(rimorchio)
-                    )
-                    st.session_state.ticket_id = ticket_id
+                st.session_state.ticket_id = ticket_id
 
-                    # Avvia thread posizione
-                    threading.Thread(
-                        target=auto_update_position,
-                        args=(ticket_id,),
-                        daemon=True
-                    ).start()
+                # Avvia thread per aggiornamento posizione
+                threading.Thread(
+                    target=auto_update_position,
+                    args=(ticket_id,),
+                    daemon=True
+                ).start()
 
-                    st.session_state.modalita = "notifiche"
-                    st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
-                    st_autorefresh(interval=1000, limit=1, key="refresh_autista")
-                except Exception as e:
-                    st.error(f"Errore invio ticket: {e}")
+                # Passaggio a pagina notifiche
+                st.session_state.modalita = "notifiche"
+                st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+
+                # Forza refresh compatibile con Streamlit recente
+                st.session_state.refresh = not st.session_state.get("refresh", False)
+                st.experimental_rerun()
+
+        except Exception as e:
+            st.error(f"Errore invio ticket: {e}")
+
 
     # Schermata notifiche
     elif st.session_state.modalita == "notifiche":
@@ -151,3 +161,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
