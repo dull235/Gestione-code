@@ -52,7 +52,6 @@ def main():
     # --- Aggiornamento posizione tramite browser ---
     def auto_update_position(ticket_id):
         while True:
-            # Richiesta lat/lon dall'utente (geolocalizzazione)
             posizione = st.session_state.get("posizione_attuale")
             if posizione:
                 lat, lon = posizione
@@ -103,12 +102,10 @@ def main():
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
 
-                    # Richiedi posizione browser
                     posizione = st.experimental_get_query_params()
                     st.session_state.posizione_attuale = None
                     st.write("🔹 Attendi il prompt per la geolocalizzazione del browser e consenti l'accesso.")
 
-                    # Avvia thread aggiornamento posizione
                     threading.Thread(
                         target=auto_update_position,
                         args=(ticket_id,),
@@ -126,39 +123,49 @@ def main():
         st.subheader("📢 Notifiche ricevute")
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
+        # ==========================
+        # 🔹 BLOCCO GPS STABILE
+        # ==========================
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("### 📍 Posizione GPS (Browser)")
 
-        get_location = """
+        gps_script = """
         <script>
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const query = new URLSearchParams(window.location.search);
-                query.set("lat", lat);
-                query.set("lon", lon);
-                window.location.search = query.toString();
-            },
-            function(err) {
-                console.warn("Errore GPS: " + err.message);
+        function inviaPosizione(){
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        const streamlitInput = window.parent.document.querySelector('input[data-testid="stTextInput"][aria-label="gps_input"]');
+                        if(streamlitInput){
+                            streamlitInput.value = lat + "," + lon;
+                            streamlitInput.dispatchEvent(new Event("input", { bubbles: true }));
+                        }
+                    },
+                    (err) => { console.warn("Errore GPS: " + err.message); }
+                );
+            } else {
+                console.warn("Geolocalizzazione non supportata");
             }
-        );
+        }
+        inviaPosizione();
         </script>
         """
-        st.markdown(get_location, unsafe_allow_html=True)
+        st.markdown(gps_script, unsafe_allow_html=True)
 
-        # Legge i parametri GPS dal browser
-        params = st.experimental_get_query_params()
-        try:
-            lat = float(params.get("lat", [0])[0])
-            lon = float(params.get("lon", [0])[0])
-            if lat != 0 and lon != 0:
-                aggiorna_posizione(ticket_id, lat, lon)
-                st.info(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
-        except Exception:
-            pass
-        # Mostra notifiche
+        gps_input = st.text_input("gps_input", value="", label_visibility="collapsed")
+        if gps_input:
+            try:
+                lat, lon = map(float, gps_input.split(","))
+                if lat != 0 and lon != 0:
+                    aggiorna_posizione(ticket_id, lat, lon)
+                    st.info(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
+            except Exception as e:
+                st.warning(f"Errore aggiornamento posizione: {e}")
+        # ==========================
+
+        # --- Mostra notifiche ---
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
@@ -191,6 +198,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
