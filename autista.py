@@ -126,6 +126,38 @@ def main():
         st.subheader("📢 Notifiche ricevute")
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("### 📍 Posizione GPS (Browser)")
+
+        get_location = """
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.location.search = query.toString();
+            },
+            function(err) {
+                console.warn("Errore GPS: " + err.message);
+            }
+        );
+        </script>
+        """
+        st.markdown(get_location, unsafe_allow_html=True)
+
+        # Legge i parametri GPS dal browser
+        params = st.experimental_get_query_params()
+        try:
+            lat = float(params.get("lat", [0])[0])
+            lon = float(params.get("lon", [0])[0])
+            if lat != 0 and lon != 0:
+                aggiorna_posizione(ticket_id, lat, lon)
+                st.info(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
+        except Exception:
+            pass
         # Mostra notifiche
         try:
             notifiche = get_notifiche(ticket_id)
@@ -159,5 +191,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
