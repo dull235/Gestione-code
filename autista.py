@@ -49,7 +49,7 @@ def main():
     if "modalita" not in st.session_state:
         st.session_state.modalita = "iniziale"
 
-    # --- Aggiornamento posizione tramite browser ---
+    # --- Aggiornamento posizione automatico tramite thread ---
     def auto_update_position(ticket_id):
         while True:
             posizione = st.session_state.get("posizione_attuale")
@@ -102,7 +102,6 @@ def main():
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
 
-                    posizione = st.experimental_get_query_params()
                     st.session_state.posizione_attuale = None
                     st.write("🔹 Attendi il prompt per la geolocalizzazione del browser e consenti l'accesso.")
 
@@ -124,10 +123,11 @@ def main():
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
         # ==========================
-        # 🔹 BLOCCO GPS STABILE
+        # 🔹 BLOCCO GPS DIAGNOSTICO
         # ==========================
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("### 📍 Posizione GPS (Browser)")
+        st.info("📡 Tentativo di lettura posizione GPS dal browser...")
 
         gps_script = """
         <script>
@@ -137,16 +137,22 @@ def main():
                     (pos) => {
                         const lat = pos.coords.latitude;
                         const lon = pos.coords.longitude;
+                        console.log("✅ Posizione letta dal browser:", lat, lon);
                         const streamlitInput = window.parent.document.querySelector('input[data-testid="stTextInput"][aria-label="gps_input"]');
                         if(streamlitInput){
                             streamlitInput.value = lat + "," + lon;
                             streamlitInput.dispatchEvent(new Event("input", { bubbles: true }));
+                        } else {
+                            console.warn("⚠️ Campo gps_input non trovato da JS");
                         }
                     },
-                    (err) => { console.warn("Errore GPS: " + err.message); }
+                    (err) => { 
+                        console.error("❌ Errore GPS:", err.message);
+                        alert("Errore GPS: " + err.message);
+                    }
                 );
             } else {
-                console.warn("Geolocalizzazione non supportata");
+                alert("❌ Geolocalizzazione non supportata su questo dispositivo");
             }
         }
         inviaPosizione();
@@ -154,16 +160,19 @@ def main():
         """
         st.markdown(gps_script, unsafe_allow_html=True)
 
+        # campo nascosto per ricevere coordinate
         gps_input = st.text_input("gps_input", value="", label_visibility="collapsed")
+
         if gps_input:
             try:
                 lat, lon = map(float, gps_input.split(","))
-                if lat != 0 and lon != 0:
-                    aggiorna_posizione(ticket_id, lat, lon)
-                    st.info(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
+                st.session_state.posizione_attuale = (lat, lon)
+                aggiorna_posizione(ticket_id, lat, lon)
+                st.success(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
             except Exception as e:
                 st.warning(f"Errore aggiornamento posizione: {e}")
-        # ==========================
+        else:
+            st.info("⏳ In attesa del consenso GPS dal browser...")
 
         # --- Mostra notifiche ---
         try:
