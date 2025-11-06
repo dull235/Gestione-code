@@ -72,6 +72,11 @@ def main():
             pass
     # --- Se non disponibili, richiedi geolocalizzazione via JS ---
     elif st.session_state.posizione_attuale == (0.0, 0.0):
+    if st.session_state.posizione_attuale != (0.0, 0.0):
+        lat, lon = st.session_state.posizione_attuale
+        st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
+    else:
+        st.markdown("**📍 Posizione attuale:** Non rilevata")
         st.markdown("""
         <script>
         navigator.geolocation.getCurrentPosition(
@@ -179,3 +184,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
