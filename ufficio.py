@@ -9,7 +9,7 @@ def main():
     st.set_page_config(
         page_title="Ufficio Carico/Scarico",
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
-        layout="container"
+        layout="wide"
     )
 
     st.markdown("""
@@ -109,4 +109,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
