@@ -45,46 +45,39 @@ def aggiorna_posizione(ticket_id, lat, lon):
         supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id)
     )
 
-def aggiorna_stato(ticket_id, stato, notifica_testo="", chiamata=False, chiusura=False):
+def aggiorna_stato(ticket_id, stato, notifica_testo=""):
+    now = datetime.utcnow().isoformat()
+
     update_data = {"Stato": stato}
 
-    # Se è stata effettuata la chiamata, aggiorna Data_chiamata
-    if chiamata:
-        update_data["Data_chiamata"] = datetime.utcnow().isoformat()
+    # Aggiorna le date automaticamente in base allo stato
+    if stato == "Chiamato":
+        update_data["Data_chiamata"] = now
+    elif stato == "Terminato":
+        update_data["Data_chiusura"] = now
+        # Calcola durata se Data_chiamata esiste
+        ticket = supabase.table("tickets").select("Data_chiamata").eq("ID", ticket_id).single().execute()
+        data_chiamata = ticket.data.get("Data_chiamata") if ticket.data else None
+        if data_chiamata:
+            fmt = "%Y-%m-%dT%H:%M:%S.%f"
+            durata = datetime.strptime(now, fmt) - datetime.strptime(data_chiamata, fmt)
+            update_data["Durata_servizio"] = str(durata)
 
-    # Se il ticket viene chiuso, aggiorna Data_chiusura, calcola Durata_servizio e imposta Attivo=False
-    if chiusura:
-        # Recupera Data_creazione per calcolare durata
-        ticket = _execute_query(
-            supabase.table("tickets").select("Data_creazione").eq("ID", ticket_id)
-        )
-        if ticket and isinstance(ticket[0], dict):
-            data_creazione = datetime.fromisoformat(ticket[0]["Data_creazione"])
-            data_chiusura = datetime.utcnow()
-            durata = (data_chiusura - data_creazione).total_seconds() / 60  # minuti
-            update_data.update({
-                "Data_chiusura": data_chiusura.isoformat(),
-                "Durata_servizio": round(durata, 2),
-                "Attivo": False
-            })
-    
-    # Aggiorna il ticket
-    _execute_query(
-        supabase.table("tickets").update(update_data).eq("ID", ticket_id)
-    )
+    _execute_query(supabase.table("tickets").update(update_data).eq("ID", ticket_id))
 
-    # Inserisci notifica se presente
+    # Inserisci notifica
     if notifica_testo:
         _execute_query(
             supabase.table("notifiche").insert({
                 "Ticket_id": ticket_id,
                 "Testo": notifica_testo,
-                "Data": datetime.utcnow().isoformat()
+                "Data": now
             })
         )
         _execute_query(
             supabase.table("tickets").update({"Ultima_notifica": notifica_testo}).eq("ID", ticket_id)
         )
+
 
 def get_ticket_attivi():
     return _execute_query(
@@ -101,3 +94,4 @@ def get_notifiche(ticket_id):
     return _execute_query(
         supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True)
     )
+
