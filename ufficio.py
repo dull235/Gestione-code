@@ -6,10 +6,7 @@ from database import get_ticket_attivi, aggiorna_stato
 import math
 from datetime import datetime
 
-# Aggiornamento automatico ogni 10 secondi
-st_autorefresh = st.experimental_singleton(lambda: None)
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = 0
+
 
 def main():
     st.set_page_config(
@@ -117,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
