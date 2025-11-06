@@ -44,20 +44,22 @@ def main():
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
-    # --- Variabili di sessione ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
         st.session_state.modalita = "iniziale"
 
-    # --- Funzione aggiornamento posizione ---
+    # --- Aggiornamento posizione tramite browser ---
     def auto_update_position(ticket_id):
-        lat, lon = 45.0, 9.0  # valori simulati
         while True:
-            try:
-                aggiorna_posizione(ticket_id, lat, lon)
-            except Exception as e:
-                st.warning(f"Errore aggiornamento posizione simulata: {e}")
+            # Richiesta lat/lon dall'utente (geolocalizzazione)
+            posizione = st.session_state.get("posizione_attuale")
+            if posizione:
+                lat, lon = posizione
+                try:
+                    aggiorna_posizione(ticket_id, lat, lon)
+                except Exception as e:
+                    st.warning(f"Errore aggiornamento posizione: {e}")
             time.sleep(10)
 
     # --- Schermata iniziale ---
@@ -98,15 +100,21 @@ def main():
                         rimorchio=int(rimorchio)
                     )
                     st.session_state.ticket_id = ticket_id
+                    st.session_state.modalita = "notifiche"
+                    st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
 
+                    # Richiedi posizione browser
+                    posizione = st.experimental_get_query_params()
+                    st.session_state.posizione_attuale = None
+                    st.write("🔹 Attendi il prompt per la geolocalizzazione del browser e consenti l'accesso.")
+
+                    # Avvia thread aggiornamento posizione
                     threading.Thread(
                         target=auto_update_position,
                         args=(ticket_id,),
                         daemon=True
                     ).start()
 
-                    st.session_state.modalita = "notifiche"
-                    st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
                     st.experimental_rerun()
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
@@ -118,13 +126,14 @@ def main():
         st.subheader("📢 Notifiche ricevute")
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
+        # Mostra notifiche
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
             st.error(f"Errore recupero notifiche: {e}")
             notifiche = []
 
-        if notifiche and len(notifiche) > 0:
+        if notifiche:
             ultima = notifiche[0]
             testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
             data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
