@@ -93,22 +93,18 @@ def main():
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
                 st.rerun()
 
-            # --- Mappa Folium centrata sugli autisti attivi ---
-            lat_list, lon_list = [], []
-            for r in tickets:
-                lat = r.get("Lat")
-                lon = r.get("Lon")
-                if lat is not None and lon is not None and not math.isnan(lat) and not math.isnan(lon):
-                    lat_list.append(lat)
-                    lon_list.append(lon)
+            # --- Mappa Folium con icone autista ---
+            st.subheader("📍 Posizione Ticket")
 
+            # Calcola lat/lon media per centrare mappa
+            lat_list = [r.get("Lat") for r in tickets if r.get("Lat") is not None and not math.isnan(r.get("Lat"))]
+            lon_list = [r.get("Lon") for r in tickets if r.get("Lon") is not None and not math.isnan(r.get("Lon"))]
             if lat_list and lon_list:
                 lat_media = sum(lat_list) / len(lat_list)
                 lon_media = sum(lon_list) / len(lon_list)
             else:
-                lat_media, lon_media = 45.5, 9.0  # default Italia
+                lat_media, lon_media = 45.5, 9.0
 
-            st.subheader("📍 Posizione Ticket")
             m = folium.Map(location=[lat_media, lon_media], zoom_start=8)
 
             for r in tickets:
@@ -119,10 +115,12 @@ def main():
                 folium.Marker(
                     [lat, lon],
                     popup=f"{r['Nome']} - {r['Tipo']}\nStato: {r['Stato']}",
-                    tooltip=f"ID: {r['ID']}"
+                    tooltip=f"ID: {r['ID']}",
+                    icon=folium.Icon(color="blue", icon="truck", prefix="fa")  # icona camion autista
                 ).add_to(m)
 
             st_data = st_folium(m, width=900, height=600)
+
         else:
             st.info("Nessun ticket attivo al momento.")
 
