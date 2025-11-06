@@ -1,31 +1,68 @@
-if view == "Ticket Aperti":
+import streamlit as st
+import pandas as pd
+import folium
+from streamlit_folium import st_folium
+from database import get_ticket_attivi, aggiorna_stato, aggiorna_storico
+import math
+
+def main():
+    st.set_page_config(
+        page_title="Ufficio Carico/Scarico",
+        page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
+        layout="wide"
+    )
+
+    st.markdown("""
+    <style>
+    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
+    .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Login semplice
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if not st.session_state.logged_in:
+        st.subheader("🔑 Login Ufficio")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Accedi"):
+            if username == "admin" and password == "1234":
+                st.session_state.logged_in = True
+                st.experimental_rerun()  # Aggiorna pagina al login
+            else:
+                st.error("Username o password errati")
+        return
+
+    st.sidebar.title("📋 Menu")
+    st.sidebar.info("La pagina principale mostra solo i ticket attivi.")
+    st.title("🏢 Gestione Ticket Ufficio")
+
+    notifiche_testi = {
+        "Chiamata": "È il tuo turno. Sei pregato di recarti in pesa.",
+        "Sollecito": "Sollecito: È il tuo turno. Recati in pesa.",
+        "Annulla": "Attività annullata. Rivolgiti all’ufficio.",
+        "Non Presentato": "Attività annullata per assenza.",
+        "Termina Servizio": "Grazie per la visita."
+    }
+
+    # Ticket Aperti
     try:
         tickets = get_ticket_attivi()
+        # Filtra i ticket terminati
+        tickets = [t for t in tickets if t.get("Stato") != "Terminato"]
     except Exception as e:
         st.error(f"Errore caricamento ticket: {e}")
         tickets = []
 
-    # Filtra i ticket terminati così spariscono dalla pagina principale
-    tickets = [t for t in tickets if t.get("Stato") != "Terminato"]
-
     if tickets:
+        # Garantire la presenza della colonna Data_chiamata
+        for t in tickets:
+            if "Data_chiamata" not in t or t["Data_chiamata"] is None:
+                t["Data_chiamata"] = ""
+
         df = pd.DataFrame(tickets)
-
-        # --- FORMATTARE LE DATE ---
-        date_cols = ["Data_chiamata", "Data_apertura", "Data_chiusura"]
-        for col in date_cols:
-            if col in df.columns:
-                def format_date(x):
-                    if pd.isna(x) or x in ["", None]:
-                        return "-"
-                    try:
-                        return pd.to_datetime(x, errors='coerce').strftime("%d/%m/%Y %H:%M")
-                    except:
-                        return str(x)
-                df[col] = df[col].apply(format_date)
-            else:
-                df[col] = "-"
-
         st.dataframe(df, use_container_width=True)
 
         selected_id = st.selectbox("Seleziona ticket:", df["ID"])
@@ -40,7 +77,18 @@ if view == "Ticket Aperti":
         if col4.button("NON PRESENTATO"):
             aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
         if col5.button("TERMINA SERVIZIO"):
+            # Aggiorna stato a Terminato
             aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+            # Salva nello storico
+            try:
+                ticket = next((t for t in tickets if t["ID"] == selected_id), None)
+                if ticket:
+                    aggiorna_storico(ticket)
+            except Exception as e:
+                st.warning(f"Non è stato possibile aggiornare lo storico: {e}")
+            # Aggiorna pagina
+            st.session_state["refresh"] = st.session_state.get("refresh", 0) + 1
+            st.experimental_rerun()
 
         # Mappa Folium
         st.subheader("📍 Posizione Ticket")
@@ -55,7 +103,11 @@ if view == "Ticket Aperti":
                 popup=f"{r['Nome']} - {r['Tipo']}",
                 tooltip=r["Stato"]
             ).add_to(m)
-        st_data = st_folium(m, width=700, height=500)
+        st_folium(m, width=700, height=500)
 
     else:
         st.info("Nessun ticket attivo al momento.")
+
+
+if __name__ == "__main__":
+    main()
