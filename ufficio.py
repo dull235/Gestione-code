@@ -4,6 +4,7 @@ import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_stato
 import math
+from datetime import datetime
 
 def main():
     st.set_page_config(
@@ -50,9 +51,8 @@ def main():
     }
 
     if view == "Ticket Aperti":
-        # Filtra solo i ticket non terminati/chiusi
         try:
-            tickets = [t for t in get_ticket_attivi() if t["Stato"] not in ["Terminato", "Annullato", "Non Presentato"]]
+            tickets = get_ticket_attivi()
         except Exception as e:
             st.error(f"Errore caricamento ticket: {e}")
             tickets = []
@@ -61,9 +61,9 @@ def main():
             df = pd.DataFrame(tickets)
 
             # Gestione date vuote
-            for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:  # tutte le colonne date
+            for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
                 if col in df.columns:
-                    df[col] = df[col].fillna("-").astype(str)
+                    df[col] = df[col].apply(lambda x: x if pd.notna(x) else "-")
 
             st.dataframe(df, use_container_width=True)
 
@@ -75,10 +75,12 @@ def main():
             if col2.button("SOLLECITO"):
                 aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
             if col3.button("ANNULLA"):
+                # aggiorna stato e mantiene ticket nello storico
                 aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
             if col4.button("NON PRESENTATO"):
                 aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
             if col5.button("TERMINA SERVIZIO"):
+                # aggiorna stato e mantiene ticket nello storico
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
 
             # Mappa Folium
@@ -107,10 +109,10 @@ def main():
 
         if storico:
             df_storico = pd.DataFrame(storico)
-            # Gestione date vuote nello storico
+            # Mostra "-" se date vuote
             for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
                 if col in df_storico.columns:
-                    df_storico[col] = df_storico[col].fillna("-").astype(str)
+                    df_storico[col] = df_storico[col].apply(lambda x: x if pd.notna(x) else "-")
             st.dataframe(df_storico, use_container_width=True)
         else:
             st.info("Nessun ticket storico disponibile.")
