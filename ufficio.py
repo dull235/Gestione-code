@@ -31,7 +31,7 @@ def main():
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
                 st.success("Login effettuato!")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Username o password errati")
         return
@@ -50,10 +50,9 @@ def main():
     }
 
     if view == "Ticket Aperti":
+        # Filtra solo i ticket non terminati/chiusi
         try:
-            tickets = get_ticket_attivi()
-            # Manteniamo solo quelli attivi
-            tickets = [t for t in tickets if t.get("Attivo", False)]
+            tickets = [t for t in get_ticket_attivi() if t["Stato"] not in ["Terminato", "Annullato", "Non Presentato"]]
         except Exception as e:
             st.error(f"Errore caricamento ticket: {e}")
             tickets = []
@@ -62,10 +61,9 @@ def main():
             df = pd.DataFrame(tickets)
 
             # Gestione date vuote
-            date_cols = ["Data_creazione", "Data_chiamata", "Data_chiusura"]
-            for col in date_cols:
+            for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:  # tutte le colonne date
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: x if x else "")
+                    df[col] = df[col].fillna("-").astype(str)
 
             st.dataframe(df, use_container_width=True)
 
@@ -74,19 +72,14 @@ def main():
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
                 aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                st.rerun()
             if col2.button("SOLLECITO"):
                 aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                st.rerun()
             if col3.button("ANNULLA"):
                 aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                st.rerun()
             if col4.button("NON PRESENTATO"):
                 aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                st.rerun()
             if col5.button("TERMINA SERVIZIO"):
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                st.rerun()
 
             # Mappa Folium
             st.subheader("📍 Posizione Ticket")
@@ -94,14 +87,14 @@ def main():
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
-                if lat is None or lon is None or (isinstance(lat, float) and math.isnan(lat)) or (isinstance(lon, float) and math.isnan(lon)):
+                if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
                     continue
                 folium.Marker(
                     [lat, lon],
                     popup=f"{r['Nome']} - {r['Tipo']}",
-                    tooltip=r.get("Stato", "")
+                    tooltip=r["Stato"]
                 ).add_to(m)
-            st_folium(m, width=700, height=500)
+            st_data = st_folium(m, width=700, height=500)
         else:
             st.info("Nessun ticket attivo al momento.")
 
@@ -114,13 +107,10 @@ def main():
 
         if storico:
             df_storico = pd.DataFrame(storico)
-
-            # Convertiamo le date in formato leggibile e gestiamo None
-            date_cols = ["Data_creazione", "Data_chiamata", "Data_chiusura"]
-            for col in date_cols:
+            # Gestione date vuote nello storico
+            for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
                 if col in df_storico.columns:
-                    df_storico[col] = df_storico[col].apply(lambda x: x if x else "")
-
+                    df_storico[col] = df_storico[col].fillna("-").astype(str)
             st.dataframe(df_storico, use_container_width=True)
         else:
             st.info("Nessun ticket storico disponibile.")
@@ -128,4 +118,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
