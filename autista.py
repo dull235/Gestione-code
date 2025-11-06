@@ -44,6 +44,7 @@ def main():
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
+    # --- Session state iniziale ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
@@ -51,12 +52,11 @@ def main():
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
 
-    # --- Aggiornamento posizione tramite thread ---
+    # --- Thread aggiornamento posizione ---
     def auto_update_position(ticket_id):
         while True:
-            posizione = st.session_state.get("posizione_attuale")
-            if posizione:
-                lat, lon = posizione
+            lat, lon = st.session_state.get("posizione_attuale", (0.0, 0.0))
+            if ticket_id and lat and lon:
                 try:
                     aggiorna_posizione(ticket_id, lat, lon)
                 except Exception as e:
@@ -70,7 +70,7 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form di inserimento ticket ---
+    # --- Form inserimento ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -84,6 +84,34 @@ def main():
             destinazione = st.text_input("Destinazione")
         else:
             produttore = st.text_input("Produttore")
+
+        # --- Recupero GPS lato browser ---
+        gps_script = """
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.history.replaceState({}, '', `${window.location.pathname}?${query}`);
+            },
+            function(err) { console.warn("Errore GPS: " + err.message); }
+        );
+        </script>
+        """
+        st.markdown(gps_script, unsafe_allow_html=True)
+
+        # --- Aggiorna posizione lato server ---
+        params = st.experimental_get_query_params()
+        try:
+            lat = float(params.get("lat", [0])[0])
+            lon = float(params.get("lon", [0])[0])
+            if lat != 0 and lon != 0:
+                st.session_state.posizione_attuale = (lat, lon)
+        except Exception:
+            pass
 
         if st.button("📨 Invia Richiesta"):
             if not nome or not azienda or not targa:
@@ -116,7 +144,7 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
-    # --- Schermata notifiche (senza mappa) ---
+    # --- Schermata notifiche ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -124,44 +152,6 @@ def main():
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
         st.markdown("<hr>", unsafe_allow_html=True)
-
-        # --- Richiesta GPS lato browser ---
-        gps_script = """
-        <script>
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const query = new URLSearchParams(window.location.search);
-                query.set("lat", lat);
-                query.set("lon", lon);
-                window.location.search = query.toString();
-            },
-            function(err) {
-                console.warn("Errore GPS: " + err.message);
-            }
-        );
-        </script>
-        """
-        st.markdown(gps_script, unsafe_allow_html=True)
-
-        # --- Aggiorna posizione lato server ---
-        params = st.experimental_get_query_params()
-        try:
-            lat = float(params.get("lat", [0])[0])
-            lon = float(params.get("lon", [0])[0])
-            if lat != 0 and lon != 0:
-                st.session_state.posizione_attuale = (lat, lon)
-        except Exception:
-            pass
-
-        # --- Campi hidden per GPS (fix TypeError) ---
-        lat_val = float(st.session_state.posizione_attuale[0]) if st.session_state.posizione_attuale else 0.0
-        lon_val = float(st.session_state.posizione_attuale[1]) if st.session_state.posizione_attuale else 0.0
-
-        lat_input = st.number_input("lat_hidden", value=lat_val, key="lat_hidden", step=0.000001)
-        lon_input = st.number_input("lon_hidden", value=lon_val, key="lon_hidden", step=0.000001)
-        st.session_state.posizione_attuale = (lat_input, lon_input)
 
         # --- Mostra notifiche ---
         try:
