@@ -45,7 +45,7 @@ def aggiorna_posizione(ticket_id, lat, lon):
         supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id)
     )
 
-def aggiorna_stato(ticket_id, stato, notifica_testo=""):
+def aggiorna_stato(ticket_id, stato, notifica_testo="", data_chiamata=None):
     """
     Aggiorna lo stato di un ticket.
     Se lo stato è 'Terminato', calcola la durata del servizio e aggiorna Data_chiusura.
@@ -61,7 +61,10 @@ def aggiorna_stato(ticket_id, stato, notifica_testo=""):
     ticket = ticket[0]
     
     update_data = {"Stato": stato}
-
+    
+    if data_chiamata:
+        update_data["Data_chiamata"] = data_chiamata
+    
     if stato == "Terminato":
         data_creazione_str = ticket.get("Data_creazione")
         if data_creazione_str:
@@ -105,3 +108,4 @@ def get_notifiche(ticket_id):
     return _execute_query(
         supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True)
     )
+
