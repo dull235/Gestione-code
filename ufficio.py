@@ -31,7 +31,7 @@ def main():
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
                 st.success("Login effettuato!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Username o password errati")
         return
@@ -74,19 +74,19 @@ def main():
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
                 aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-                st.experimental_rerun()
+                st.rerun()
             if col2.button("SOLLECITO"):
                 aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-                st.experimental_rerun()
+                st.rerun()
             if col3.button("ANNULLA"):
                 aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-                st.experimental_rerun()
+                st.rerun()
             if col4.button("NON PRESENTATO"):
                 aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-                st.experimental_rerun()
+                st.rerun()
             if col5.button("TERMINA SERVIZIO"):
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-                st.experimental_rerun()
+                st.rerun()
 
             # Mappa Folium
             st.subheader("📍 Posizione Ticket")
@@ -128,3 +128,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
