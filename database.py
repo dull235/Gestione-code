@@ -27,8 +27,8 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
         "Destinazione": destinazione,
         "Produttore": produttore,
         "Rimorchio": rimorchio,
-        "Lat": lat,
-        "Lon": lon,
+        "Lat": lat if lat is not None else 0.0,
+        "Lon": lon if lon is not None else 0.0,
         "Stato": "Nuovo",
         "Attivo": True,
         "Data_creazione": datetime.utcnow().isoformat()
@@ -41,9 +41,10 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
 
 # --- Aggiornamento posizione GPS ---
 def aggiorna_posizione(ticket_id, lat, lon):
-    _execute_query(
-        supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id)
-    )
+    if lat is not None and lon is not None:
+        _execute_query(
+            supabase.table("tickets").update({"Lat": lat, "Lon": lon}).eq("ID", ticket_id)
+        )
 
 # --- Aggiornamento stato ticket ---
 def aggiorna_stato(ticket_id, stato, notifica_testo="", data_chiamata=None):
