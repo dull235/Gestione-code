@@ -4,9 +4,8 @@ import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, aggiorna_stato
 import math
+import time
 from datetime import datetime
-
-
 
 def main():
     st.set_page_config(
@@ -22,10 +21,10 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
+    # Login semplice
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
-    # Login semplice
     if not st.session_state.logged_in:
         st.subheader("🔑 Login Ufficio")
         username = st.text_input("Username")
@@ -38,6 +37,15 @@ def main():
                 st.error("Username o password errati")
         return
 
+    # Aggiornamento automatico ogni 10 secondi
+    if "last_refresh" not in st.session_state:
+        st.session_state.last_refresh = 0
+
+    if time.time() - st.session_state.last_refresh > 10:
+        st.session_state.last_refresh = time.time()
+        st.experimental_rerun()  # ricarica solo per aggiornare i dati, Streamlit 1.25+ supporta st.rerun()
+
+    st.sidebar.title("📋 Menu")
     st.title("🏢 Gestione Ticket Ufficio")
 
     notifiche_testi = {
@@ -48,52 +56,42 @@ def main():
         "Termina Servizio": "Grazie per la visita."
     }
 
-    # Aggiornamento automatico ogni 10 secondi
-    import time
-    if time.time() - st.session_state.last_refresh > 10:
-        st.session_state.last_refresh = time.time()
-
-    # Ticket attivi (esclude Terminati)
+    # Ticket aperti
     try:
         tickets = get_ticket_attivi()
     except Exception as e:
         st.error(f"Errore caricamento ticket: {e}")
         tickets = []
 
-    tickets = [t for t in tickets if t.get("Stato") != "Terminato"]
+    # Filtra i ticket terminati (non mostrarli nella pagina principale)
+    tickets = [t for t in tickets if t["Stato"] != "Terminato"]
 
     if tickets:
+        # Popola Data_chiamata vuota se non presente
         for t in tickets:
             if "Data_chiamata" not in t or t["Data_chiamata"] is None:
                 t["Data_chiamata"] = ""
 
         df = pd.DataFrame(tickets)
-
         st.dataframe(df, use_container_width=True)
 
         selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
         col1, col2, col3, col4, col5 = st.columns(5)
         if col1.button("CHIAMATA"):
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"], data_chiamata=now)
-            st.session_state.last_refresh = 0  # Forza refresh immediato
-
+            ora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"], data_chiamata=ora)
+            st.success(f"Ticket {selected_id} chiamato alle {ora}")
+            st.experimental_rerun()
         if col2.button("SOLLECITO"):
             aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-            st.session_state.last_refresh = 0
-
         if col3.button("ANNULLA"):
             aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-            st.session_state.last_refresh = 0
-
         if col4.button("NON PRESENTATO"):
             aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-            st.session_state.last_refresh = 0
-
         if col5.button("TERMINA SERVIZIO"):
             aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
-            st.session_state.last_refresh = 0
+            st.experimental_rerun()
 
         # Mappa Folium
         st.subheader("📍 Posizione Ticket")
@@ -108,10 +106,9 @@ def main():
                 popup=f"{r['Nome']} - {r['Tipo']}",
                 tooltip=r["Stato"]
             ).add_to(m)
-        st_folium(m, width=700, height=500)
+        st_data = st_folium(m, width=700, height=500)
     else:
         st.info("Nessun ticket attivo al momento.")
 
 if __name__ == "__main__":
     main()
-
