@@ -21,10 +21,8 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    # Autorefresh automatico ogni 5 secondi
     st_autorefresh(interval=5000, key="refresh")
 
-    # Login semplice
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
@@ -36,14 +34,13 @@ def main():
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
                 st.success("Login effettuato!")
-                st.rerun()  # solo per login
+                st.rerun()
             else:
                 st.error("Username o password errati")
         return
 
     st.sidebar.title("📋 Menu")
     view = st.sidebar.radio("Seleziona vista:", ["Ticket Aperti"])
-
     st.title("🏢 Gestione Ticket Ufficio")
 
     notifiche_testi = {
@@ -61,20 +58,15 @@ def main():
             st.error(f"Errore caricamento ticket: {e}")
             tickets = []
 
-        # Filtra solo i ticket non terminati
         tickets = [t for t in tickets if t["Stato"] != "Terminato"]
 
         if tickets:
             df = pd.DataFrame(tickets)
-
-            # Popola Data_chiamata se non presente
             if "Data_chiamata" not in df.columns:
                 df["Data_chiamata"] = ""
-
             st.dataframe(df, use_container_width=True)
 
             selected_id = st.selectbox("Seleziona ticket:", df["ID"])
-
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
                 ora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -93,20 +85,9 @@ def main():
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
                 st.rerun()
 
-            # --- Mappa Folium con icone autista ---
+            # --- Mappa Folium con icone autisti ---
             st.subheader("📍 Posizione Ticket")
-
-            # Calcola lat/lon media per centrare mappa
-            lat_list = [r.get("Lat") for r in tickets if r.get("Lat") is not None and not math.isnan(r.get("Lat"))]
-            lon_list = [r.get("Lon") for r in tickets if r.get("Lon") is not None and not math.isnan(r.get("Lon"))]
-            if lat_list and lon_list:
-                lat_media = sum(lat_list) / len(lat_list)
-                lon_media = sum(lon_list) / len(lon_list)
-            else:
-                lat_media, lon_media = 45.5, 9.0
-
-            m = folium.Map(location=[lat_media, lon_media], zoom_start=8)
-
+            m = folium.Map(location=[45.5, 9.0], zoom_start=8)
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
@@ -114,13 +95,11 @@ def main():
                     continue
                 folium.Marker(
                     [lat, lon],
-                    popup=f"{r['Nome']} - {r['Tipo']}\nStato: {r['Stato']}",
-                    tooltip=f"ID: {r['ID']}",
-                    icon=folium.Icon(color="blue", icon="truck", prefix="fa")  # icona camion autista
+                    popup=f"{r['Nome']} - {r['Tipo']}",
+                    tooltip=f"{r['Stato']}",
+                    icon=folium.Icon(color="blue", icon="truck", prefix="fa")
                 ).add_to(m)
-
-            st_data = st_folium(m, width=900, height=600)
-
+            st_data = st_folium(m, width=700, height=500)
         else:
             st.info("Nessun ticket attivo al momento.")
 
