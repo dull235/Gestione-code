@@ -17,17 +17,13 @@ def main():
     .stApp {
         background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
         no-repeat center center fixed;
-        background-size: contain;
+        background-size: cover;
     }
     .main > div {
-        background-color: rgba(255, 255, 255, 0.8) !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
         padding: 20px;
         border-radius: 10px;
         color: black !important;
-    }
-    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label {
-        color: black !important;
-        background-color: rgba(144, 238, 144, 0.9) !important;
     }
     .stButton button {
         background-color: #1976d2;
@@ -46,7 +42,7 @@ def main():
     """, unsafe_allow_html=True)
 
     st.title("🚛 Pagina Autisti")
-    st.write("Compila i tuoi dati e ricevi aggiornamenti in tempo reale dall'ufficio.")
+    st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
     # --- Variabili di sessione ---
     if "ticket_id" not in st.session_state:
@@ -54,29 +50,15 @@ def main():
     if "modalita" not in st.session_state:
         st.session_state.modalita = "iniziale"
 
-    # --- Funzione per aggiornamento posizione ---
+    # --- Funzione aggiornamento posizione ---
     def auto_update_position(ticket_id):
-        try:
-            import streamlit_js_eval
-            from streamlit_js_eval import get_geolocation
-            while True:
-                location = get_geolocation()
-                if location:
-                    lat, lon = location["latitude"], location["longitude"]
-                    try:
-                        aggiorna_posizione(ticket_id, lat, lon)
-                    except Exception as e:
-                        st.warning(f"Errore aggiornamento posizione: {e}")
-                time.sleep(10)
-        except Exception:
-            # Se non funziona il geolocalizzatore reale, si può simulare
-            lat, lon = 45.0, 9.0
-            while True:
-                try:
-                    aggiorna_posizione(ticket_id, lat, lon)
-                except Exception as e:
-                    st.warning(f"Errore aggiornamento posizione simulata: {e}")
-                time.sleep(10)
+        lat, lon = 45.0, 9.0  # valori simulati
+        while True:
+            try:
+                aggiorna_posizione(ticket_id, lat, lon)
+            except Exception as e:
+                st.warning(f"Errore aggiornamento posizione simulata: {e}")
+            time.sleep(10)
 
     # --- Schermata iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -85,7 +67,7 @@ def main():
             st.session_state.modalita = "form"
             st.experimental_rerun()
 
-    # --- Form di inserimento ---
+    # --- Form di inserimento ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
 
@@ -117,7 +99,6 @@ def main():
                     )
                     st.session_state.ticket_id = ticket_id
 
-                    # Avvia thread posizione
                     threading.Thread(
                         target=auto_update_position,
                         args=(ticket_id,),
@@ -125,7 +106,7 @@ def main():
                     ).start()
 
                     st.session_state.modalita = "notifiche"
-                    st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+                    st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
                     st.experimental_rerun()
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
@@ -135,7 +116,6 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
-
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
         try:
@@ -148,25 +128,20 @@ def main():
             ultima = notifiche[0]
             testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
             data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
-
             st.markdown(f"### 🕓 Ultimo aggiornamento: `{data}`")
             st.markdown(f"#### 💬 **{testo}**")
-
             st.divider()
             st.write("🔁 Storico ultime notifiche:")
-
             for n in notifiche[1:5]:
                 testo_n = n.get("Testo") if isinstance(n, dict) else n[0]
                 data_n = n.get("Data") if isinstance(n, dict) else n[1]
                 st.markdown(f"<div class='notifica'>🕓 <b>{data_n}</b><br>{testo_n}</div>", unsafe_allow_html=True)
-
         else:
             st.info("Nessuna notifica disponibile al momento.")
 
         col1, col2 = st.columns(2)
         if col1.button("🔄 Aggiorna ora"):
             st.experimental_rerun()
-
         if col2.button("❌ Chiudi ticket locale"):
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
