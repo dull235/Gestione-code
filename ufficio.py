@@ -64,10 +64,17 @@ def main():
     if tickets_attivi:
         df = pd.DataFrame(tickets_attivi)
 
-        # Riempie le date vuote
-        for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
-            if col in df.columns:
-                df[col] = df[col].apply(lambda x: x if pd.notna(x) else "-")
+        # Riempie le date vuote e formatta
+for col in ["Data_chiamata", "Data_apertura", "Data_chiusura"]:
+    if col in df.columns:
+        def format_date(x):
+            if pd.isna(x) or x in ["", None]:
+                return "-"
+            try:
+                return pd.to_datetime(x).strftime("%d/%m/%Y %H:%M")
+            except:
+                return str(x)
+        df[col] = df[col].apply(format_date)
 
         # Mostra tabella
         st.dataframe(df, use_container_width=True)
@@ -123,3 +130,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
