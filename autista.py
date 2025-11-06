@@ -146,11 +146,6 @@ def main():
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        lat_val = float(st.session_state.posizione_attuale[0]) if st.session_state.posizione_attuale else 0.0
-        lon_val = float(st.session_state.posizione_attuale[1]) if st.session_state.posizione_attuale else 0.0
-        lat_input = st.number_input("lat_hidden", value=lat_val, key="lat_hidden", step=0.000001)
-        lon_input = st.number_input("lon_hidden", value=lon_val, key="lon_hidden", step=0.000001)
-        st.session_state.posizione_attuale = (lat_input, lon_input)
 
         try:
             notifiche = get_notifiche(ticket_id)
@@ -183,3 +178,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
