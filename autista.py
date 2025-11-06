@@ -43,30 +43,36 @@ def main():
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
+    # --- Inizializza session state ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
+    if "gps_pronto" not in st.session_state:
+        st.session_state.gps_pronto = False
 
+    # --- Thread aggiornamento posizione ---
     def auto_update_position(ticket_id):
         while True:
-            posizione = st.session_state.get("posizione_attuale")
-            if posizione and ticket_id:
-                lat, lon = posizione
-                try:
-                    aggiorna_posizione(ticket_id, lat, lon)
-                except Exception as e:
-                    st.warning(f"Errore aggiornamento posizione: {e}")
+            if st.session_state.get("gps_pronto") and ticket_id:
+                lat, lon = st.session_state.posizione_attuale
+                if lat != 0.0 and lon != 0.0:
+                    try:
+                        aggiorna_posizione(ticket_id, lat, lon)
+                    except Exception as e:
+                        st.warning(f"Errore aggiornamento posizione: {e}")
             time.sleep(10)  # ogni 10 secondi
 
+    # --- Rilevamento GPS ---
     params = st.experimental_get_query_params()
     if "lat" in params and "lon" in params:
         try:
             lat = float(params["lat"][0])
             lon = float(params["lon"][0])
             st.session_state.posizione_attuale = (lat, lon)
+            st.session_state.gps_pronto = True
         except:
             pass
     else:
@@ -88,12 +94,14 @@ def main():
         </script>
         """, unsafe_allow_html=True)
 
+    # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
             st.rerun()
 
+    # --- Modalità form ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -113,6 +121,7 @@ def main():
                 st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
             else:
                 try:
+                    lat, lon = st.session_state.posizione_attuale
                     ticket_id = inserisci_ticket(
                         nome=nome,
                         azienda=azienda,
@@ -121,8 +130,8 @@ def main():
                         destinazione=destinazione,
                         produttore=produttore,
                         rimorchio=int(rimorchio),
-                        lat=st.session_state.posizione_attuale[0],
-                        lon=st.session_state.posizione_attuale[1]
+                        lat=lat if st.session_state.gps_pronto else None,
+                        lon=lon if st.session_state.gps_pronto else None
                     )
                     st.session_state.ticket_id = ticket_id
                     st.session_state.modalita = "notifiche"
@@ -138,6 +147,7 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
+    # --- Modalità notifiche ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -145,7 +155,6 @@ def main():
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
         st.markdown("<hr>", unsafe_allow_html=True)
-
 
         try:
             notifiche = get_notifiche(ticket_id)
@@ -178,4 +187,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
