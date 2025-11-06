@@ -11,7 +11,6 @@ def main():
         layout="wide"
     )
 
-    # --- Sfondo personalizzato ---
     st.markdown("""
     <style>
     .stApp {
@@ -51,7 +50,6 @@ def main():
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
 
-    # --- Aggiornamento posizione tramite thread ---
     def auto_update_position(ticket_id):
         while True:
             posizione = st.session_state.get("posizione_attuale")
@@ -63,7 +61,6 @@ def main():
                     st.warning(f"Errore aggiornamento posizione: {e}")
             time.sleep(10)  # ogni 10 secondi
 
-    # --- Ottieni posizione dal browser ---
     params = st.experimental_get_query_params()
     if "lat" in params and "lon" in params:
         try:
@@ -73,7 +70,6 @@ def main():
         except:
             pass
     else:
-        # Se non ci sono parametri, esegui lo script GPS lato browser
         st.markdown("""
         <script>
         navigator.geolocation.getCurrentPosition(
@@ -92,14 +88,12 @@ def main():
         </script>
         """, unsafe_allow_html=True)
 
-    # --- Schermata iniziale ---
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form di inserimento ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -134,7 +128,6 @@ def main():
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
 
-                    # Avvia thread aggiornamento posizione
                     threading.Thread(
                         target=auto_update_position,
                         args=(ticket_id,),
@@ -145,7 +138,6 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
-    # --- Schermata notifiche ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -154,15 +146,12 @@ def main():
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        # --- Campi hidden per GPS (evita errori TypeError) ---
         lat_val = float(st.session_state.posizione_attuale[0]) if st.session_state.posizione_attuale else 0.0
         lon_val = float(st.session_state.posizione_attuale[1]) if st.session_state.posizione_attuale else 0.0
-
         lat_input = st.number_input("lat_hidden", value=lat_val, key="lat_hidden", step=0.000001)
         lon_input = st.number_input("lon_hidden", value=lon_val, key="lon_hidden", step=0.000001)
         st.session_state.posizione_attuale = (lat_input, lon_input)
 
-        # --- Mostra notifiche ---
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
