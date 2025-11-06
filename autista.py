@@ -2,9 +2,7 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from datetime import datetime
 from database import get_ticket_attivi, get_ticket_storico, aggiorna_posizione, get_notifiche
-import random
 
 def main():
     st.set_page_config(
@@ -13,17 +11,17 @@ def main():
         layout="wide"
     )
 
-    # --- Stile ---
     st.markdown("""
     <style>
     .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
     .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .stTextInput input, .stSelectbox select { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
     </style>
     """, unsafe_allow_html=True)
 
     st.title("🚚 Dashboard Autista")
 
-    # --- Ticket attivi ---
+    # --- Selezione ticket attivi ---
     try:
         tickets = get_ticket_attivi()
     except Exception as e:
@@ -36,6 +34,7 @@ def main():
             "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
             "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
         ])
+        st.dataframe(df, use_container_width=True)
 
         selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
@@ -53,18 +52,17 @@ def main():
         else:
             st.info("Nessuna notifica per questo ticket.")
 
-        # --- Aggiorna posizione automaticamente ---
-        st.subheader("📍 Posizione (aggiornata automaticamente)")
-        # Se non ci sono coordinate, simuliamo una posizione vicina
-        lat = df.loc[df["ID"] == selected_id, "Lat"].values[0]
-        lon = df.loc[df["ID"] == selected_id, "Lon"].values[0]
-        if lat is None: lat = 45.0 + random.random()/100
-        if lon is None: lon = 9.0 + random.random()/100
-
-        try:
-            aggiorna_posizione(selected_id, lat, lon)
-        except Exception as e:
-            st.error(f"Errore aggiornamento posizione automatica: {e}")
+        # --- Aggiorna posizione ---
+        st.subheader("📍 Aggiorna Posizione")
+        lat = st.number_input("Latitudine", value=df.loc[df["ID"] == selected_id, "Lat"].values[0] or 0.0)
+        lon = st.number_input("Longitudine", value=df.loc[df["ID"] == selected_id, "Lon"].values[0] or 0.0)
+        if st.button("Aggiorna posizione"):
+            try:
+                aggiorna_posizione(selected_id, lat, lon)
+                st.success("Posizione aggiornata correttamente.")
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"Errore aggiornamento posizione: {e}")
 
         # --- Mappa ---
         st.subheader("📍 Posizione Ticket")
@@ -83,7 +81,7 @@ def main():
     else:
         st.info("Nessun ticket attivo al momento.")
 
-    # --- Storico ticket ---
+    # --- Storico ---
     st.subheader("📜 Storico Ticket")
     try:
         storico = get_ticket_storico()
@@ -97,18 +95,11 @@ def main():
             "Produttore", "Stato", "Attivo", "Data_creazione", "Data_chiamata",
             "Data_chiusura", "Durata_servizio", "Ultima_notifica", "Lat", "Lon"
         ])
-        # Formattazione Durata_servizio
         if "Durata_servizio" in df_s.columns:
-            def format_duration(x):
-                if pd.isnull(x):
-                    return ""
-                try:
-                    total_minutes = float(x)
-                    return f"{int(total_minutes//60)}h {int(total_minutes%60)}m"
-                except:
-                    return str(x)
-            df_s["Durata_servizio"] = df_s["Durata_servizio"].apply(format_duration)
-        st.dataframe(df_s[["ID", "Data_creazione", "Data_chiamata", "Data_chiusura", "Durata_servizio", "Ultima_notifica"]], use_container_width=True)
+            df_s["Durata_servizio"] = df_s["Durata_servizio"].apply(
+                lambda x: f"{int(x//60)}h {int(x%60)}m" if pd.notnull(x) else ""
+            )
+        st.dataframe(df_s, use_container_width=True)
     else:
         st.info("Nessun ticket chiuso nello storico.")
 
