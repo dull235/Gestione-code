@@ -52,12 +52,21 @@ def main():
     if view == "Ticket Aperti":
         try:
             tickets = get_ticket_attivi()
+            # Manteniamo solo quelli attivi
+            tickets = [t for t in tickets if t.get("Attivo", False)]
         except Exception as e:
             st.error(f"Errore caricamento ticket: {e}")
             tickets = []
 
         if tickets:
             df = pd.DataFrame(tickets)
+
+            # Gestione date vuote
+            date_cols = ["Data_creazione", "Data_chiamata", "Data_chiusura"]
+            for col in date_cols:
+                if col in df.columns:
+                    df[col] = df[col].apply(lambda x: x if x else "")
+
             st.dataframe(df, use_container_width=True)
 
             selected_id = st.selectbox("Seleziona ticket:", df["ID"])
@@ -65,14 +74,19 @@ def main():
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
                 aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
+                st.experimental_rerun()
             if col2.button("SOLLECITO"):
                 aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
+                st.experimental_rerun()
             if col3.button("ANNULLA"):
                 aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
+                st.experimental_rerun()
             if col4.button("NON PRESENTATO"):
                 aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
+                st.experimental_rerun()
             if col5.button("TERMINA SERVIZIO"):
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+                st.experimental_rerun()
 
             # Mappa Folium
             st.subheader("📍 Posizione Ticket")
@@ -80,15 +94,14 @@ def main():
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
-                # Controllo NaN
-                if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
+                if lat is None or lon is None or (isinstance(lat, float) and math.isnan(lat)) or (isinstance(lon, float) and math.isnan(lon)):
                     continue
                 folium.Marker(
                     [lat, lon],
                     popup=f"{r['Nome']} - {r['Tipo']}",
-                    tooltip=r["Stato"]
+                    tooltip=r.get("Stato", "")
                 ).add_to(m)
-            st_data = st_folium(m, width=700, height=500)
+            st_folium(m, width=700, height=500)
         else:
             st.info("Nessun ticket attivo al momento.")
 
@@ -101,6 +114,13 @@ def main():
 
         if storico:
             df_storico = pd.DataFrame(storico)
+
+            # Convertiamo le date in formato leggibile e gestiamo None
+            date_cols = ["Data_creazione", "Data_chiamata", "Data_chiusura"]
+            for col in date_cols:
+                if col in df_storico.columns:
+                    df_storico[col] = df_storico[col].apply(lambda x: x if x else "")
+
             st.dataframe(df_storico, use_container_width=True)
         else:
             st.info("Nessun ticket storico disponibile.")
