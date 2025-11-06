@@ -46,24 +46,36 @@ def aggiorna_posizione(ticket_id, lat, lon):
     )
 
 def aggiorna_stato(ticket_id, stato, notifica_testo=""):
-    now = datetime.utcnow().isoformat()
+    from datetime import datetime
 
-    update_data = {"Stato": stato}
+    aggiornamenti = {"Stato": stato}
 
-    # Aggiorna le date automaticamente in base allo stato
     if stato == "Chiamato":
-        update_data["Data_chiamata"] = now
-    elif stato == "Terminato":
-        update_data["Data_chiusura"] = now
-        # Calcola durata se Data_chiamata esiste
-        ticket = supabase.table("tickets").select("Data_chiamata").eq("ID", ticket_id).single().execute()
-        data_chiamata = ticket.data.get("Data_chiamata") if ticket.data else None
-        if data_chiamata:
-            fmt = "%Y-%m-%dT%H:%M:%S.%f"
-            durata = datetime.strptime(now, fmt) - datetime.strptime(data_chiamata, fmt)
-            update_data["Durata_servizio"] = str(durata)
+        aggiornamenti["Data_chiamata"] = datetime.utcnow().isoformat()
+    elif stato in ["Annullato", "Non Presentato", "Terminato"]:
+        aggiornamenti["Data_chiusura"] = datetime.utcnow().isoformat()
+        aggiornamenti["Attivo"] = False
 
-    _execute_query(supabase.table("tickets").update(update_data).eq("ID", ticket_id))
+        # Calcola durata se disponibile
+        ticket = _execute_query(
+            supabase.table("tickets").select("Data_creazione, Data_chiamata").eq("ID", ticket_id)
+        )
+        if ticket and isinstance(ticket, list) and len(ticket) > 0:
+            t = ticket[0]
+            inizio = t.get("Data_chiamata") or t.get("Data_creazione")
+            if inizio:
+                try:
+                    da = datetime.fromisoformat(inizio.replace("Z", ""))
+                    durata = datetime.utcnow() - da
+                    ore = int(durata.total_seconds() // 3600)
+                    minuti = int((durata.total_seconds() % 3600) // 60)
+                    aggiornamenti["Durata_servizio"] = f"{ore}h {minuti}m"
+                except Exception:
+                    aggiornamenti["Durata_servizio"] = str(durata)
+
+    _execute_query(
+        supabase.table("tickets").update(aggiornamenti).eq("ID", ticket_id)
+    )
 
     # Inserisci notifica
     if notifica_testo:
@@ -71,7 +83,7 @@ def aggiorna_stato(ticket_id, stato, notifica_testo=""):
             supabase.table("notifiche").insert({
                 "Ticket_id": ticket_id,
                 "Testo": notifica_testo,
-                "Data": now
+                "Data": datetime.utcnow().isoformat()
             })
         )
         _execute_query(
@@ -94,4 +106,5 @@ def get_notifiche(ticket_id):
     return _execute_query(
         supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True)
     )
+
 
