@@ -7,10 +7,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- Helper per esecuzione query ---
+# --- Helper: controlla se esiste attributo .error oppure gestisci eccezione ---
 def _execute_query(query):
     try:
         response = query.execute()
+        # Compatibilità vecchia libreria
         if hasattr(response, "error") and response.error:
             raise Exception(response.error.message)
         return response.data
@@ -18,7 +19,6 @@ def _execute_query(query):
         raise Exception(str(e))
 
 # --- Funzioni CRUD per i ticket ---
-
 def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
     data = {
         "Nome": nome,
@@ -46,38 +46,38 @@ def aggiorna_posizione(ticket_id, lat, lon):
     )
 
 def aggiorna_stato(ticket_id, stato, notifica_testo=""):
-    from datetime import datetime
+    """
+    Aggiorna lo stato di un ticket.
+    Se lo stato è 'Terminato', calcola la durata del servizio e aggiorna Data_chiusura.
+    Invia una notifica se specificata.
+    """
+    # Recupera il ticket per calcolare la durata
+    ticket = _execute_query(
+        supabase.table("tickets").select("*").eq("ID", ticket_id)
+    )
+    if not ticket or not isinstance(ticket, list):
+        raise Exception(f"Ticket {ticket_id} non trovato")
+    
+    ticket = ticket[0]
+    
+    update_data = {"Stato": stato}
 
-    aggiornamenti = {"Stato": stato}
-
-    if stato == "Chiamato":
-        aggiornamenti["Data_chiamata"] = datetime.utcnow().isoformat()
-    elif stato in ["Annullato", "Non Presentato", "Terminato"]:
-        aggiornamenti["Data_chiusura"] = datetime.utcnow().isoformat()
-        aggiornamenti["Attivo"] = False
-
-        # Calcola durata se disponibile
-        ticket = _execute_query(
-            supabase.table("tickets").select("Data_creazione, Data_chiamata").eq("ID", ticket_id)
-        )
-        if ticket and isinstance(ticket, list) and len(ticket) > 0:
-            t = ticket[0]
-            inizio = t.get("Data_chiamata") or t.get("Data_creazione")
-            if inizio:
-                try:
-                    da = datetime.fromisoformat(inizio.replace("Z", ""))
-                    durata = datetime.utcnow() - da
-                    ore = int(durata.total_seconds() // 3600)
-                    minuti = int((durata.total_seconds() % 3600) // 60)
-                    aggiornamenti["Durata_servizio"] = f"{ore}h {minuti}m"
-                except Exception:
-                    aggiornamenti["Durata_servizio"] = str(durata)
-
+    if stato == "Terminato":
+        data_creazione_str = ticket.get("Data_creazione")
+        if data_creazione_str:
+            # converte in datetime
+            data_creazione = datetime.fromisoformat(data_creazione_str)
+            data_chiusura = datetime.utcnow()
+            durata_minuti = (data_chiusura - data_creazione).total_seconds() / 60
+            update_data["Data_chiusura"] = data_chiusura.isoformat()
+            update_data["Durata_servizio"] = round(durata_minuti, 2)  # salva come numero
+    
+    # Aggiorna il ticket
     _execute_query(
-        supabase.table("tickets").update(aggiornamenti).eq("ID", ticket_id)
+        supabase.table("tickets").update(update_data).eq("ID", ticket_id)
     )
 
-    # Inserisci notifica
+    # Inserisci notifica se fornita
     if notifica_testo:
         _execute_query(
             supabase.table("notifiche").insert({
@@ -86,10 +86,10 @@ def aggiorna_stato(ticket_id, stato, notifica_testo=""):
                 "Data": datetime.utcnow().isoformat()
             })
         )
+        # Aggiorna anche ultima notifica nel ticket
         _execute_query(
             supabase.table("tickets").update({"Ultima_notifica": notifica_testo}).eq("ID", ticket_id)
         )
-
 
 def get_ticket_attivi():
     return _execute_query(
@@ -102,9 +102,6 @@ def get_ticket_storico():
     )
 
 def get_notifiche(ticket_id):
-    # Attenzione alle maiuscole: Testo e Data devono essere così come in Supabase
     return _execute_query(
         supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True)
     )
-
-
