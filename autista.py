@@ -3,10 +3,35 @@ import threading
 import time
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-# --- Impostazioni pagina ---
-st.set_page_config(page_title="Autista", page_icon="🚛", layout="centered")
+# --- Impostazioni pagina e stile ---
+st.set_page_config(
+    page_title="Autista",
+    page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
+    layout="centered"
+)
 
-# --- Inizializza stato sessione ---
+st.markdown("""
+<style>
+.stApp { 
+    background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; 
+    background-size: cover; 
+}
+.main > div { 
+    background-color: rgba(255, 255, 255, 0.85) !important; 
+    padding: 20px; 
+    border-radius: 10px; 
+    color: black !important; 
+}
+.notifica { 
+    padding: 10px; 
+    margin-bottom: 5px; 
+    border-left: 4px solid #1f77b4; 
+    background-color: #f0f8ff; 
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Stato sessione ---
 if "modalita" not in st.session_state:
     st.session_state.modalita = "iniziale"
 if "ticket_id" not in st.session_state:
@@ -16,7 +41,6 @@ if "ticket_id" not in st.session_state:
 def auto_update_position(ticket_id):
     import random
     while st.session_state.modalita == "notifiche" and st.session_state.ticket_id == ticket_id:
-        # genera lat/lon casuali per simulazione (oppure integra GPS reale)
         lat = 45.0 + random.uniform(-0.05, 0.05)
         lon = 9.0 + random.uniform(-0.05, 0.05)
         try:
