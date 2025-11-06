@@ -5,6 +5,7 @@ from streamlit_folium import st_folium
 from database import get_ticket_attivi, aggiorna_stato
 import math
 from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
 
 def main():
     st.set_page_config(
@@ -21,7 +22,7 @@ def main():
     """, unsafe_allow_html=True)
 
     # Autorefresh automatico ogni 5 secondi
-    st.experimental_autorefresh(interval=5000, key="refresh")
+    st_autorefresh(interval=5000, key="refresh")
 
     # Login semplice
     if "logged_in" not in st.session_state:
@@ -111,3 +112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
