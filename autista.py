@@ -62,7 +62,7 @@ def main():
             time.sleep(10)  # ogni 10 secondi
 
     # --- Ottieni lat/lon dai parametri della query string ---
-    params = st.experimental_get_query_params()
+    params = st.query_params()
     if "lat" in params and "lon" in params:
         try:
             lat = float(params["lat"][0])
@@ -183,5 +183,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
