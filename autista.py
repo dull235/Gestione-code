@@ -3,9 +3,16 @@ import threading
 import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
+import random
+
+# --- Funzione per simulare posizione se GPS non disponibile ---
+def get_simulated_location():
+    # Coordinate casuali vicino a Milano per simulazione
+    lat = 45.4642 + random.uniform(-0.01, 0.01)
+    lon = 9.19 + random.uniform(-0.01, 0.01)
+    return lat, lon
 
 def main():
-    # --- Imposta pagina e CSS ---
     st.set_page_config(
         page_title="Gestione Code - Autisti",
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
@@ -14,39 +21,16 @@ def main():
 
     st.markdown("""
     <style>
-    .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
-        no-repeat center center fixed;
-        background-size: contain;
-    }
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.8) !important;
-        padding: 20px;
-        border-radius: 10px;
-        color: black !important;
-    }
-    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label {
-        color: black !important;
-        background-color: rgba(144, 238, 144, 0.9) !important;
-    }
-    .stButton button {
-        background-color: #1976d2;
-        color: white;
-        border-radius: 8px;
-        border: none;
-    }
-    .notifica {
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 10px 15px;
-        border-left: 6px solid #1976d2;
-        margin-bottom: 10px;
-        border-radius: 6px;
-    }
+    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: contain; }
+    .main > div { background-color: rgba(255, 255, 255, 0.8) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .stTextInput input, .stSelectbox select, .stRadio input + label, .stCheckbox input + label { color: black !important; background-color: rgba(144, 238, 144, 0.9) !important; }
+    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
+    .notifica { background-color: rgba(255, 255, 255, 0.9); padding: 10px 15px; border-left: 6px solid #1976d2; margin-bottom: 10px; border-radius: 6px; }
     </style>
     """, unsafe_allow_html=True)
 
     st.title("🚛 Pagina Autisti")
-    st.write("Compila i tuoi dati e ricevi aggiornamenti in tempo reale dall'ufficio.")
+    st.write("Ricevi aggiornamenti in tempo reale dall'ufficio.")
 
     # --- Variabili di sessione ---
     if "ticket_id" not in st.session_state:
@@ -56,17 +40,26 @@ def main():
 
     # --- Funzione per aggiornamento posizione ---
     def auto_update_position(ticket_id):
-        import streamlit_js_eval
-        from streamlit_js_eval import get_geolocation
+        try:
+            from streamlit_js_eval import get_geolocation
+        except ImportError:
+            get_geolocation = None
+
         while True:
-            location = get_geolocation()
-            if location:
-                lat, lon = location["latitude"], location["longitude"]
-                try:
-                    aggiorna_posizione(ticket_id, lat, lon)
-                except Exception as e:
-                    st.warning(f"Errore aggiornamento posizione: {e}")
-            time.sleep(10)
+            if get_geolocation:
+                loc = get_geolocation()
+                if loc:
+                    lat, lon = loc["latitude"], loc["longitude"]
+                else:
+                    lat, lon = get_simulated_location()
+            else:
+                lat, lon = get_simulated_location()
+
+            try:
+                aggiorna_posizione(ticket_id, lat, lon)
+            except Exception as e:
+                st.warning(f"Errore aggiornamento posizione: {e}")
+            time.sleep(10)  # ogni 10 secondi
 
     # --- Schermata iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -78,7 +71,6 @@ def main():
     # --- Form di inserimento ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
-
         nome = st.text_input("Nome e Cognome")
         azienda = st.text_input("Azienda")
         targa = st.text_input("Targa Motrice")
@@ -108,14 +100,10 @@ def main():
                     st.session_state.ticket_id = ticket_id
 
                     # Avvia thread posizione
-                    threading.Thread(
-                        target=auto_update_position,
-                        args=(ticket_id,),
-                        daemon=True
-                    ).start()
+                    threading.Thread(target=auto_update_position, args=(ticket_id,), daemon=True).start()
 
                     st.session_state.modalita = "notifiche"
-                    st.success("✅ Ticket inviato all'ufficio! Attendi chiamata o aggiornamenti.")
+                    st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
                     time.sleep(1)
                     st.rerun()
                 except Exception as e:
@@ -135,22 +123,11 @@ def main():
             st.error(f"Errore recupero notifiche: {e}")
             notifiche = []
 
-        if notifiche and len(notifiche) > 0:
-            ultima = notifiche[0]
-            testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
-            data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
-
-            st.markdown(f"### 🕓 Ultimo aggiornamento: `{data}`")
-            st.markdown(f"#### 💬 **{testo}**")
-
-            st.divider()
-            st.write("🔁 Storico ultime notifiche:")
-
-            for n in notifiche[1:5]:
-                testo_n = n.get("Testo") if isinstance(n, dict) else n[0]
-                data_n = n.get("Data") if isinstance(n, dict) else n[1]
-                st.markdown(f"<div class='notifica'>🕓 <b>{data_n}</b><br>{testo_n}</div>", unsafe_allow_html=True)
-
+        if notifiche:
+            for n in notifiche[:5]:
+                testo = n.get("Testo") if isinstance(n, dict) else n[0]
+                data = n.get("Data") if isinstance(n, dict) else n[1]
+                st.markdown(f"<div class='notifica'>🕓 <b>{data}</b><br>{testo}</div>", unsafe_allow_html=True)
         else:
             st.info("Nessuna notifica disponibile al momento.")
 
