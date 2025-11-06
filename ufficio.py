@@ -4,6 +4,8 @@ import folium
 from streamlit_folium import st_folium
 from database import get_ticket_attivi, aggiorna_stato
 import math
+from datetime import datetime
+import time
 
 def main():
     st.set_page_config(
@@ -23,7 +25,7 @@ def main():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
     if "refresh_page" not in st.session_state:
-        st.session_state.refresh_page = False
+        st.session_state.refresh_page = 0
 
     # Login semplice
     if not st.session_state.logged_in:
@@ -33,17 +35,15 @@ def main():
         if st.button("Accedi"):
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
-                st.session_state.refresh_page = not st.session_state.refresh_page
+                st.session_state.refresh_page += 1
                 st.success("Login effettuato!")
             else:
                 st.error("Username o password errati")
         return
 
-    st.sidebar.title("📋 Menu")
-    view = "Ticket Aperti"  # rimosso storico ticket
-
     st.title("🏢 Gestione Ticket Ufficio")
 
+    # Notifiche
     notifiche_testi = {
         "Chiamata": "È il tuo turno. Sei pregato di recarti in pesa.",
         "Sollecito": "Sollecito: È il tuo turno. Recati in pesa.",
@@ -52,55 +52,75 @@ def main():
         "Termina Servizio": "Grazie per la visita."
     }
 
-    if view == "Ticket Aperti":
-        try:
-            tickets = get_ticket_attivi()
-        except Exception as e:
-            st.error(f"Errore caricamento ticket: {e}")
-            tickets = []
+    # Aggiornamento automatico ogni 10 secondi
+    st_autorefresh = st.experimental_singleton(lambda: None)
+    if st_autorefresh is None:
+        st_autorefresh = 0
+    if time.time() - st_autorefresh > 10:
+        st.session_state.refresh_page += 1
+        st_autorefresh = time.time()
 
-        # Filtra solo ticket non terminati
-        tickets = [t for t in tickets if t.get("Stato") != "Terminato"]
+    # Ticket aperti
+    try:
+        tickets = get_ticket_attivi()
+    except Exception as e:
+        st.error(f"Errore caricamento ticket: {e}")
+        tickets = []
 
-        if tickets:
-            # Assicura Data_chiamata visibile
-            for t in tickets:
-                if "Data_chiamata" not in t or t["Data_chiamata"] is None:
-                    t["Data_chiamata"] = ""
+    # Filtra solo ticket non terminati
+    tickets = [t for t in tickets if t.get("Stato") != "Terminato"]
 
-            df = pd.DataFrame(tickets)
-            st.dataframe(df, use_container_width=True)
+    if tickets:
+        # Assicura Data_chiamata visibile
+        for t in tickets:
+            if "Data_chiamata" not in t or t["Data_chiamata"] is None:
+                t["Data_chiamata"] = ""
 
-            selected_id = st.selectbox("Seleziona ticket:", df["ID"])
+        df = pd.DataFrame(tickets)
+        st.dataframe(df, use_container_width=True)
 
-            col1, col2, col3, col4, col5 = st.columns(5)
-            if col1.button("CHIAMATA"):
-                aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"])
-            if col2.button("SOLLECITO"):
-                aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
-            if col3.button("ANNULLA"):
-                aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
-            if col4.button("NON PRESENTATO"):
-                aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
-            if col5.button("TERMINA SERVIZIO"):
-                aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+        selected_id = st.selectbox("Seleziona ticket:", df["ID"])
 
-            # Mappa Folium
-            st.subheader("📍 Posizione Ticket")
-            m = folium.Map(location=[45.5, 9.0], zoom_start=8)
-            for r in tickets:
-                lat = r.get("Lat")
-                lon = r.get("Lon")
-                if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
-                    continue
-                folium.Marker(
-                    [lat, lon],
-                    popup=f"{r['Nome']} - {r['Tipo']}",
-                    tooltip=r["Stato"]
-                ).add_to(m)
-            st_data = st_folium(m, width=700, height=500)
-        else:
-            st.info("Nessun ticket attivo al momento.")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        if col1.button("CHIAMATA"):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Aggiorna stato e Data_chiamata
+            aggiorna_stato(selected_id, "Chiamato", notifiche_testi["Chiamata"], data_chiamata=now)
+            st.session_state.refresh_page += 1
+
+        if col2.button("SOLLECITO"):
+            aggiorna_stato(selected_id, "Sollecito", notifiche_testi["Sollecito"])
+            st.session_state.refresh_page += 1
+
+        if col3.button("ANNULLA"):
+            aggiorna_stato(selected_id, "Annullato", notifiche_testi["Annulla"])
+            st.session_state.refresh_page += 1
+
+        if col4.button("NON PRESENTATO"):
+            aggiorna_stato(selected_id, "Non Presentato", notifiche_testi["Non Presentato"])
+            st.session_state.refresh_page += 1
+
+        if col5.button("TERMINA SERVIZIO"):
+            aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
+            st.session_state.refresh_page += 1
+
+        # Mappa Folium
+        st.subheader("📍 Posizione Ticket")
+        m = folium.Map(location=[45.5, 9.0], zoom_start=8)
+        for r in tickets:
+            lat = r.get("Lat")
+            lon = r.get("Lon")
+            if lat is None or lon is None or math.isnan(lat) or math.isnan(lon):
+                continue
+            folium.Marker(
+                [lat, lon],
+                popup=f"{r['Nome']} - {r['Tipo']}",
+                tooltip=r["Stato"]
+            ).add_to(m)
+        st_data = st_folium(m, width=700, height=500)
+
+    else:
+        st.info("Nessun ticket attivo al momento.")
 
 if __name__ == "__main__":
     main()
