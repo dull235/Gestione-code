@@ -129,9 +129,9 @@ if st.button("📨 Invia Richiesta"):
 
     # Schermata notifiche
     elif st.session_state.modalita == "notifiche":
-        ticket_id = st.session_state.ticket_id
-        st.success(f"📦 Ticket attivo ID: {ticket_id}")
-        st.subheader("📢 Notifiche ricevute")
+            ticket_id = st.session_state.ticket_id
+            st.success(f"📦 Ticket attivo ID: {ticket_id}")
+            st.subheader("📢 Notifiche ricevute")
 
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
@@ -161,4 +161,5 @@ if st.button("📨 Invia Richiesta"):
 
 if __name__ == "__main__":
     main()
+
 
