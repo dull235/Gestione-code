@@ -4,8 +4,11 @@ import time
 from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
+# Nuovo: libreria per mappa
+from streamlit_folium import st_folium
+import folium
+
 def main():
-    # --- Imposta pagina e CSS ---
     st.set_page_config(
         page_title="Gestione Code - Autisti",
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
@@ -48,8 +51,10 @@ def main():
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
         st.session_state.modalita = "iniziale"
+    if "posizione_attuale" not in st.session_state:
+        st.session_state.posizione_attuale = None
 
-    # --- Aggiornamento posizione automatico tramite thread ---
+    # --- Aggiornamento posizione tramite thread ---
     def auto_update_position(ticket_id):
         while True:
             posizione = st.session_state.get("posizione_attuale")
@@ -71,7 +76,6 @@ def main():
     # --- Form di inserimento ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
-
         nome = st.text_input("Nome e Cognome")
         azienda = st.text_input("Azienda")
         targa = st.text_input("Targa Motrice")
@@ -102,9 +106,7 @@ def main():
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
 
-                    st.session_state.posizione_attuale = None
-                    st.write("🔹 Attendi il prompt per la geolocalizzazione del browser e consenti l'accesso.")
-
+                    # Avvia thread aggiornamento posizione
                     threading.Thread(
                         target=auto_update_position,
                         args=(ticket_id,),
@@ -115,64 +117,65 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
-    # --- Schermata notifiche ---
+    # --- Schermata notifiche con mappa ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
         st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
-        # ==========================
-        # 🔹 BLOCCO GPS DIAGNOSTICO
-        # ==========================
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### 📍 Posizione GPS (Browser)")
-        st.info("📡 Tentativo di lettura posizione GPS dal browser...")
 
-        gps_script = """
-        <script>
-        function inviaPosizione(){
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const lat = pos.coords.latitude;
-                        const lon = pos.coords.longitude;
-                        console.log("✅ Posizione letta dal browser:", lat, lon);
-                        const streamlitInput = window.parent.document.querySelector('input[data-testid="stTextInput"][aria-label="gps_input"]');
-                        if(streamlitInput){
-                            streamlitInput.value = lat + "," + lon;
-                            streamlitInput.dispatchEvent(new Event("input", { bubbles: true }));
-                        } else {
-                            console.warn("⚠️ Campo gps_input non trovato da JS");
-                        }
-                    },
-                    (err) => { 
-                        console.error("❌ Errore GPS:", err.message);
-                        alert("Errore GPS: " + err.message);
-                    }
-                );
-            } else {
-                alert("❌ Geolocalizzazione non supportata su questo dispositivo");
-            }
-        }
-        inviaPosizione();
-        </script>
-        """
-        st.markdown(gps_script, unsafe_allow_html=True)
+        # --- Pulsante aggiornamento posizione GPS ---
+        if st.button("📍 Aggiorna Posizione GPS"):
+            get_location = """
+            <script>
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const query = new URLSearchParams(window.location.search);
+                    query.set("lat", lat);
+                    query.set("lon", lon);
+                    window.location.search = query.toString();
+                },
+                function(err) {
+                    alert("Errore GPS: " + err.message);
+                }
+            );
+            </script>
+            """
+            st.markdown(get_location, unsafe_allow_html=True)
 
-        # campo nascosto per ricevere coordinate
-        gps_input = st.text_input("gps_input", value="", label_visibility="collapsed")
-
-        if gps_input:
-            try:
-                lat, lon = map(float, gps_input.split(","))
+        # Legge parametri GPS
+        params = st.experimental_get_query_params()
+        try:
+            lat = float(params.get("lat", [0])[0])
+            lon = float(params.get("lon", [0])[0])
+            if lat != 0 and lon != 0:
                 st.session_state.posizione_attuale = (lat, lon)
                 aggiorna_posizione(ticket_id, lat, lon)
-                st.success(f"📍 Posizione aggiornata: {lat:.5f}, {lon:.5f}")
-            except Exception as e:
-                st.warning(f"Errore aggiornamento posizione: {e}")
+        except Exception:
+            pass
+
+        # --- Mostra mappa con marker ---
+        st.markdown("### 🗺️ Posizione attuale su mappa")
+        if st.session_state.posizione_attuale:
+            lat, lon = st.session_state.posizione_attuale
         else:
-            st.info("⏳ In attesa del consenso GPS dal browser...")
+            # Coordinate di default (es. Italia)
+            lat, lon = 41.9, 12.5
+
+        mappa = folium.Map(location=[lat, lon], zoom_start=12)
+        folium.Marker(
+            location=[lat, lon],
+            icon=folium.CustomIcon(
+                "https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
+                icon_size=(50, 50)
+            ),
+            tooltip="Posizione Autista"
+        ).add_to(mappa)
+        st_data = st_folium(mappa, width=700, height=500)
 
         # --- Mostra notifiche ---
         try:
