@@ -61,6 +61,7 @@ def main():
             pass
 
     # --- Geolocalizzazione via JS se mancante ---
+    st.write("DEBUG:", st.session_state.posizione_attuale)
     if st.session_state.posizione_attuale == (0.0, 0.0):
         st.markdown("**📍 Posizione attuale:** Non rilevata")
         st.markdown("""
@@ -176,3 +177,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
