@@ -1,6 +1,6 @@
 import streamlit as st
+import threading
 import time
-from streamlit_autorefresh import st_autorefresh
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
 def main():
@@ -42,7 +42,6 @@ def main():
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
-    # --- Stato iniziale ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
@@ -50,18 +49,17 @@ def main():
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
 
-    # --- Ottieni lat/lon dai parametri della query string (nuova API) ---
+    # --- Ottieni lat/lon dai parametri query string ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
-            lat = float(params["lat"])
-            lon = float(params["lon"])
+            lat = float(params["lat"][0])
+            lon = float(params["lon"][0])
             st.session_state.posizione_attuale = (lat, lon)
-        except Exception:
+        except:
             pass
 
-    # --- Geolocalizzazione via JS se mancante ---
-    st.write("DEBUG:", st.session_state.posizione_attuale)
+    # --- Geolocalizzazione JS ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
         st.markdown("**📍 Posizione attuale:** Non rilevata")
         st.markdown("""
@@ -86,20 +84,12 @@ def main():
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
 
-        # 🔄 Aggiorna posizione nel DB ogni 10 secondi se il ticket è attivo
-        st_autorefresh(interval=10000, key="auto_update_posizione")
-        if st.session_state.ticket_id:
-            try:
-                aggiorna_posizione(st.session_state.ticket_id, lat, lon)
-            except Exception as e:
-                st.warning(f"Errore aggiornamento posizione: {e}")
-
-    # --- Logica modalità ---
+    # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
-            st.rerun()
+            st.experimental_rerun()
 
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
@@ -134,7 +124,7 @@ def main():
                     st.session_state.ticket_id = ticket_id
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
-                    st.rerun()
+                    st.experimental_rerun()
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
@@ -142,9 +132,9 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
-        st_autorefresh(interval=5000, key="auto_refresh_notifiche")
 
-        st.markdown("<hr>", unsafe_allow_html=True)
+        # Aggiornamento automatico tramite rerun
+        st.experimental_rerun()  # ogni refresh pagina aggiorna notifiche
 
         try:
             notifiche = get_notifiche(ticket_id)
@@ -169,12 +159,11 @@ def main():
 
         col1, col2 = st.columns(2)
         if col1.button("🔄 Aggiorna ora"):
-            st.rerun()
+            st.experimental_rerun()
         if col2.button("❌ Chiudi ticket locale"):
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
-            st.rerun()
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
-
