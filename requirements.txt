@@ -1,6 +1,6 @@
-streamlit
-pandas
-folium
-streamlit-folium
-streamlit-autorefresh
-supabase
+streamlit==1.27.0
+fastapi==0.111.0
+uvicorn[standard]==0.23.1
+pandas==2.1.0
+
+
