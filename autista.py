@@ -18,7 +18,8 @@ def main():
     st.markdown("""
     <style>
     .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg")
+        no-repeat center center fixed;
         background-size: cover;
     }
     .main > div {
@@ -68,16 +69,17 @@ def main():
     if not st.session_state.gps_attivo:
         st.markdown("**📡 Geolocalizzazione:** clicca il pulsante per inviare la tua posizione al sistema.")
         if st.button("📍 Rileva posizione"):
+            # Questo script legge GPS e aggiorna la query string
             components.html("""
             <script>
             navigator.geolocation.getCurrentPosition(
                 function(pos) {
                     const lat = pos.coords.latitude.toFixed(6);
                     const lon = pos.coords.longitude.toFixed(6);
-                    // salva in sessionStorage per persistente reload
-                    sessionStorage.setItem("lat", lat);
-                    sessionStorage.setItem("lon", lon);
-                    location.reload();
+                    const query = new URLSearchParams(window.location.search);
+                    query.set("lat", lat);
+                    query.set("lon", lon);
+                    window.location.search = query.toString();
                 },
                 function(err) {
                     alert("⚠️ Errore GPS: " + err.message);
@@ -89,7 +91,7 @@ def main():
             st.session_state.gps_attivo = True
         return  # fermiamo qui finché l'utente non clicca
 
-    # --- Leggi lat/lon da query string dopo il primo click ---
+    # --- Leggi lat/lon dalla query string dopo il primo click ---
     params = st.experimental_get_query_params()
     if "lat" in params and "lon" in params:
         try:
