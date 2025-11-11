@@ -2,32 +2,53 @@ import streamlit as st
 import time
 import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
+import json
+from streamlit.server.server import Server
 
-# Compatibilità vecchie versioni Streamlit
+# --- Compatibilità Streamlit vecchie versioni ---
 if not hasattr(st, "rerun"):
     st.rerun = st.experimental_rerun
 
+# --- Endpoint per ricevere posizione GPS via POST ---
+def add_gps_endpoint():
+    server = Server.get_current()
+    if server is None:
+        return
+
+    from tornado.web import RequestHandler
+
+    class GPSHandler(RequestHandler):
+        def post(self):
+            try:
+                data = json.loads(self.request.body)
+                lat = float(data.get("lat", 0))
+                lon = float(data.get("lon", 0))
+                st.session_state.posizione_attuale = (lat, lon)
+                self.write({"status": "ok"})
+            except Exception as e:
+                self.write({"status": "error", "message": str(e)})
+
+    # Aggiunge route solo se non già presente
+    if not hasattr(st.session_state, "_gps_route_added"):
+        server._session_mgr._add_websocket_handler("/update_gps", GPSHandler)
+        st.session_state._gps_route_added = True
+
+# --- Funzione principale ---
 def main():
     st.set_page_config(
         page_title="Gestione Code - Autisti",
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
         layout="wide"
     )
-    st.markdown("""
-    <link rel="manifest" href="manifest.json">
-    <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-        .then(function(reg) { console.log('Service Worker registrato'); })
-        .catch(function(err) { console.log('Errore registrazione SW: ', err); });
-    }
-    </script>
-    """, unsafe_allow_html=True)
-    # --- CSS personalizzato ---
+
+    # --- Registra endpoint GPS ---
+    add_gps_endpoint()
+
+    # --- Stile CSS personalizzato ---
     st.markdown("""
     <style>
     .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg")
         no-repeat center center fixed;
         background-size: cover;
     }
@@ -63,55 +84,27 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
-    if "gps_attivo" not in st.session_state:
-        st.session_state.gps_attivo = False
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
-
-    # --- Gestione POST GPS ---
-    if st.session_state.posizione_attuale == (0.0, 0.0) and not st.session_state.gps_attivo:
-        st.markdown("**📡 Geolocalizzazione attiva: in attesa di coordinate GPS...**")
-        components.html("""
-            <button onclick="
-                navigator.geolocation.getCurrentPosition(
-                    function(pos){
-                        const lat = pos.coords.latitude;
-                        const lon = pos.coords.longitude;
-                        fetch('', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({lat: lat, lon: lon})
-                        }).then(()=>{location.reload();});
-                    },
-                    function(err){ alert('⚠️ Errore GPS: ' + err.message); },
-                    { enableHighAccuracy: true }
-                );
-            ">📍 Attiva GPS</button>
-        """, height=80)
-
-        # Ricezione POST dati GPS
-        if st.experimental_get_query_params().get("lat") and st.experimental_get_query_params().get("lon"):
-            st.session_state.posizione_attuale = (
-                float(st.experimental_get_query_params()["lat"][0]),
-                float(st.experimental_get_query_params()["lon"][0])
-            )
-            st.session_state.gps_attivo = True
-        return  # ferma il flusso finché GPS non attivo
-
-    # --- Mostra posizione se disponibile ---
-    lat, lon = st.session_state.posizione_attuale
-    st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
-    if st.session_state.ticket_id:
-        try:
-            aggiorna_posizione(st.session_state.ticket_id, lat, lon)
-        except Exception as e:
-            st.warning(f"Errore aggiornamento posizione: {e}")
 
     # --- Refresh automatico ogni 10 secondi ---
     refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
         st.rerun()
+
+    # --- Mostra posizione o messaggio ---
+    lat, lon = st.session_state.posizione_attuale
+    if (lat, lon) == (0.0, 0.0):
+        st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS…")
+        st.info("Apri il file `gps_sender.html` sul tuo dispositivo per inviare la posizione.")
+    else:
+        st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
+        if st.session_state.ticket_id:
+            try:
+                aggiorna_posizione(st.session_state.ticket_id, lat, lon)
+            except Exception as e:
+                st.warning(f"Errore aggiornamento posizione: {e}")
 
     # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -195,6 +188,6 @@ def main():
             st.session_state.modalita = "iniziale"
             st.rerun()
 
+
 if __name__ == "__main__":
     main()
-
