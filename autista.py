@@ -14,33 +14,12 @@ def main():
         layout="wide"
     )
 
-    # --- Stile CSS personalizzato ---
     st.markdown("""
     <style>
-    .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg")
-        no-repeat center center fixed;
-        background-size: cover;
-    }
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.85) !important;
-        padding: 20px;
-        border-radius: 10px;
-        color: black !important;
-    }
-    .stButton button {
-        background-color: #1976d2;
-        color: white;
-        border-radius: 8px;
-        border: none;
-    }
-    .notifica {
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 10px 15px;
-        border-left: 6px solid #1976d2;
-        margin-bottom: 10px;
-        border-radius: 6px;
-    }
+    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed; background-size: cover; }
+    .main > div { background-color: rgba(255, 255, 255, 0.85) !important; padding: 20px; border-radius: 10px; color: black !important; }
+    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
+    .notifica { background-color: rgba(255, 255, 255, 0.9); padding: 10px 15px; border-left: 6px solid #1976d2; margin-bottom: 10px; border-radius: 6px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -54,37 +33,39 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
-    if "gps_permesso" not in st.session_state:
-        st.session_state.gps_permesso = False
+    if "gps_attivo" not in st.session_state:
+        st.session_state.gps_attivo = False
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Script JS per GPS automatico ---
-    if not st.session_state.gps_permesso:
-        components.html("""
-        <script>
-        function sendPosition(pos) {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            const query = new URLSearchParams(window.location.search);
-            query.set("lat", lat);
-            query.set("lon", lon);
-            window.location.search = query.toString();
-        }
-
-        function gpsError(err) {
-            alert("Errore GPS: " + err.message);
-        }
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(sendPosition, gpsError, { enableHighAccuracy: true });
-            navigator.geolocation.watchPosition(sendPosition, gpsError, { enableHighAccuracy: true });
-        } else {
-            alert("Geolocalizzazione non supportata");
-        }
-        </script>
-        """, height=0)
-        st.session_state.gps_permesso = True
+    # --- Bottone per attivare GPS (necessario per browser) ---
+    if not st.session_state.gps_attivo:
+        if st.button("📍 Attiva GPS"):
+            components.html("""
+            <script>
+            function sendPosition(pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.location.search = query.toString();
+            }
+            function gpsError(err) {
+                alert("Errore GPS: " + err.message);
+            }
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(sendPosition, gpsError, { enableHighAccuracy: true });
+                navigator.geolocation.watchPosition(sendPosition, gpsError, { enableHighAccuracy: true });
+            } else {
+                alert("Geolocalizzazione non supportata dal browser");
+            }
+            </script>
+            """, height=0)
+            st.session_state.gps_attivo = True
+            st.rerun()
+        st.info("Premi il pulsante per consentire la geolocalizzazione.")
+        return  # non mostrare il resto fino al click
 
     # --- Ottieni lat/lon dalla query string ---
     params = st.query_params
