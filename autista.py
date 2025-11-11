@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
 # Compatibilità Streamlit vecchie versioni
@@ -56,7 +57,7 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
+    # --- Ottieni lat/lon dalla query string (dal GPS HTML) ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -74,7 +75,13 @@ def main():
 
     # --- Se la posizione non è ancora disponibile ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
-        st.warning("📡 Posizione non rilevata. Apri il file `gps_sender.html` e consenti il GPS.")
+        st.warning("📡 Posizione non ancora rilevata. Premi il pulsante qui sotto per attivare il GPS.")
+        try:
+            with open("gps_sender.html", "r", encoding="utf-8") as f:
+                html_code = f.read()
+            components.html(html_code, height=400)
+        except FileNotFoundError:
+            st.error("❌ File gps_sender.html non trovato. Assicurati che sia nella stessa cartella di app.py.")
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
