@@ -3,7 +3,7 @@ import time
 import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-# --- Compatibilità Streamlit vecchie versioni ---
+# Compatibilità Streamlit vecchie versioni
 if not hasattr(st, "rerun"):
     st.rerun = st.experimental_rerun
 
@@ -14,7 +14,7 @@ def main():
         layout="wide"
     )
 
-    # --- Stile CSS personalizzato ---
+    # --- CSS personalizzato ---
     st.markdown("""
     <style>
     .stApp {
@@ -73,12 +73,10 @@ def main():
         st.session_state.last_refresh_time = time.time()
         st.rerun()
 
-    # --- Geolocalizzazione con JS (funzionante su HTTPS) ---
+    # --- Geolocalizzazione con JS ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
         st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS...")
-
-        components.html(
-            """
+        components.html("""
             <script>
             const success = (pos) => {
                 const lat = pos.coords.latitude;
@@ -91,15 +89,13 @@ def main():
             const error = (err) => {
                 document.body.innerHTML += "<p style='color:red;'>⚠️ Errore GPS: " + err.message + "</p>";
             };
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true });
+            if (navigator.geolocation){
+                navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true, timeout: 10000 });
             } else {
                 document.body.innerHTML += "<p style='color:red;'>❌ Geolocalizzazione non supportata.</p>";
             }
             </script>
-            """,
-            height=0,
-        )
+        """, height=0)
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
@@ -116,7 +112,7 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form per invio ticket ---
+    # --- Form ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -159,9 +155,7 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
-
         st.markdown("<hr>", unsafe_allow_html=True)
-
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
@@ -190,7 +184,6 @@ def main():
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
-
 
 if __name__ == "__main__":
     main()
