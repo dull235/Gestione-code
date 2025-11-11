@@ -74,7 +74,10 @@ def main():
 
     # --- Se la posizione non è ancora disponibile ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
-        st.warning("📡 Posizione non rilevata. Apri il file `gps_sender.html` e consenti il GPS.")
+        gps_url = "https://dull235.github.io/gps-sender/"
+        st.warning("📡 Posizione non rilevata.")
+        st.markdown(f"[👉 Clicca qui per attivare il GPS]({gps_url})", unsafe_allow_html=True)
+
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
@@ -169,3 +172,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
