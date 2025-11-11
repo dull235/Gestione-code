@@ -1,6 +1,11 @@
 import streamlit as st
 import time
+import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
+
+# --- Compatibilità Streamlit vecchie versioni ---
+if not hasattr(st, "rerun"):
+    st.rerun = st.experimental_rerun
 
 def main():
     st.set_page_config(
@@ -9,11 +14,11 @@ def main():
         layout="wide"
     )
 
-    # --- Stile ---
+    # --- Stile CSS personalizzato ---
     st.markdown("""
     <style>
     .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg")
         no-repeat center center fixed;
         background-size: cover;
     }
@@ -42,7 +47,7 @@ def main():
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
-    # --- Stato iniziale ---
+    # --- Stato sessione ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
     if "modalita" not in st.session_state:
@@ -52,7 +57,7 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Ottieni lat/lon dai parametri query ---
+    # --- Ottieni lat/lon dalla query string ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -62,50 +67,39 @@ def main():
         except Exception:
             pass
 
-    # --- Refresh automatico ogni 10s ---
+    # --- Refresh automatico ogni 10 secondi ---
     refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
         st.rerun()
 
-    # ===============================================================
-    # 🔧 PATCH GELOCALIZZAZIONE STABILE (watchPosition)
-    # ===============================================================
+    # --- Geolocalizzazione con JS (funzionante su HTTPS) ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
-        st.markdown("**📍 Posizione attuale:** Non rilevata")
-        st.markdown("""
-        <script>
-        function startGPS() {
+        st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS...")
+
+        components.html(
+            """
+            <script>
+            const success = (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const query = new URLSearchParams(window.location.search);
+                query.set("lat", lat);
+                query.set("lon", lon);
+                window.location.search = query.toString();
+            };
+            const error = (err) => {
+                document.body.innerHTML += "<p style='color:red;'>⚠️ Errore GPS: " + err.message + "</p>";
+            };
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(
-                    function(pos) {
-                        const lat = pos.coords.latitude;
-                        const lon = pos.coords.longitude;
-                        const query = new URLSearchParams(window.location.search);
-                        query.set("lat", lat);
-                        query.set("lon", lon);
-                        // Aggiorna la URL senza ricaricare la pagina
-                        const newUrl = window.location.pathname + "?" + query.toString();
-                        window.history.replaceState({}, "", newUrl);
-                        // Ricarica solo la prima volta
-                        if (!window._gps_initialized) {
-                            window._gps_initialized = true;
-                            window.location.reload();
-                        }
-                    },
-                    function(err) {
-                        console.warn("Errore GPS: " + err.message);
-                        alert("⚠️ Errore nel rilevare la posizione: " + err.message);
-                    },
-                    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-                );
+                navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true });
             } else {
-                alert("Geolocalizzazione non supportata nel browser.");
+                document.body.innerHTML += "<p style='color:red;'>❌ Geolocalizzazione non supportata.</p>";
             }
-        }
-        startGPS();
-        </script>
-        """, unsafe_allow_html=True)
+            </script>
+            """,
+            height=0,
+        )
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
@@ -114,15 +108,15 @@ def main():
                 aggiorna_posizione(st.session_state.ticket_id, lat, lon)
             except Exception as e:
                 st.warning(f"Errore aggiornamento posizione: {e}")
-    # ===============================================================
 
-    # --- Logica modalità ---
+    # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
             st.rerun()
 
+    # --- Form per invio ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -160,6 +154,7 @@ def main():
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
+    # --- Modalità notifiche ---
     elif st.session_state.modalita == "notifiche":
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
@@ -190,12 +185,12 @@ def main():
 
         col1, col2 = st.columns(2)
         if col1.button("🔄 Aggiorna ora"):
-            st.experimental_rerun()
+            st.rerun()
         if col2.button("❌ Chiudi ticket locale"):
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
 
+
 if __name__ == "__main__":
     main()
-
