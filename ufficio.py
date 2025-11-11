@@ -31,9 +31,10 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    # --- Aggiornamento automatico ---
+    # --- Aggiornamento automatico ogni 5s ---
     st_autorefresh(interval=5000, key="refresh")
 
+    # --- Login semplice ---
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
@@ -96,7 +97,7 @@ def main():
                 aggiorna_stato(selected_id, "Terminato", notifiche_testi["Termina Servizio"])
                 st.rerun()
 
-            # --- Mappa Folium centrata sul primo ticket valido ---
+            # --- Mappa centrata sul primo ticket valido ---
             lat_init, lon_init = 45.5, 9.0
             for t in tickets:
                 lat = t.get("Lat")
@@ -107,7 +108,7 @@ def main():
 
             m = folium.Map(location=[lat_init, lon_init], zoom_start=8)
 
-            # --- Marker ticket con LAT/LON aggiornati ---
+            # --- Marker aggiornati con colore in base allo stato ---
             for r in tickets:
                 lat = r.get("Lat")
                 lon = r.get("Lon")
@@ -138,7 +139,7 @@ def main():
                 ).add_to(m)
 
             st.subheader("📍 Posizione Ticket Autisti")
-            st_data = st_folium(m, width=1200, height=700)
+            st_folium(m, width=1200, height=700)
         else:
             st.info("Nessun ticket attivo al momento.")
 
