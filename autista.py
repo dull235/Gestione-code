@@ -9,6 +9,7 @@ def main():
         layout="wide"
     )
 
+    # --- Stile ---
     st.markdown("""
     <style>
     .stApp {
@@ -51,7 +52,7 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Ottieni lat/lon dai parametri della query string ---
+    # --- Ottieni lat/lon dai parametri query ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -61,43 +62,59 @@ def main():
         except Exception:
             pass
 
-    # --- Refresh automatico ogni 10 secondi ---
-    refresh_interval = 10  # secondi
+    # --- Refresh automatico ogni 10s ---
+    refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
         st.experimental_rerun()
 
-    # --- Geolocalizzazione via JS se mancante ---
-    st.write("DEBUG:", st.session_state.posizione_attuale)
+    # ===============================================================
+    # 🔧 PATCH GELOCALIZZAZIONE STABILE (watchPosition)
+    # ===============================================================
     if st.session_state.posizione_attuale == (0.0, 0.0):
         st.markdown("**📍 Posizione attuale:** Non rilevata")
         st.markdown("""
         <script>
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const query = new URLSearchParams(window.location.search);
-                query.set("lat", lat);
-                query.set("lon", lon);
-                window.location.search = query.toString();
-            },
-            function(err) {
-                console.warn("Errore GPS: " + err.message);
-                alert("⚠️ Errore nel rilevare la posizione: " + err.message);
+        function startGPS() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    function(pos) {
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        const query = new URLSearchParams(window.location.search);
+                        query.set("lat", lat);
+                        query.set("lon", lon);
+                        // Aggiorna la URL senza ricaricare la pagina
+                        const newUrl = window.location.pathname + "?" + query.toString();
+                        window.history.replaceState({}, "", newUrl);
+                        // Ricarica solo la prima volta
+                        if (!window._gps_initialized) {
+                            window._gps_initialized = true;
+                            window.location.reload();
+                        }
+                    },
+                    function(err) {
+                        console.warn("Errore GPS: " + err.message);
+                        alert("⚠️ Errore nel rilevare la posizione: " + err.message);
+                    },
+                    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+                );
+            } else {
+                alert("Geolocalizzazione non supportata nel browser.");
             }
-        );
+        }
+        startGPS();
         </script>
         """, unsafe_allow_html=True)
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
-        # Aggiorna posizione nel DB se ticket attivo
         if st.session_state.ticket_id:
             try:
                 aggiorna_posizione(st.session_state.ticket_id, lat, lon)
             except Exception as e:
                 st.warning(f"Errore aggiornamento posizione: {e}")
+    # ===============================================================
 
     # --- Logica modalità ---
     if st.session_state.modalita == "iniziale":
