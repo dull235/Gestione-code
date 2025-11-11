@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Invio Posizione GPS</title>
+</head>
+<body>
+    <h2>Attendere prego… rilevazione posizione in corso</h2>
+    <script>
+        function sendPosition(lat, lon) {
+            fetch("/update_gps", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lat: lat, lon: lon })
+            }).then(() => {
+                document.body.innerHTML = "<h2>✅ Posizione inviata con successo!</h2>";
+            }).catch(err => {
+                document.body.innerHTML = "<h2>❌ Errore invio posizione: " + err + "</h2>";
+            });
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => sendPosition(pos.coords.latitude, pos.coords.longitude),
+                err => document.body.innerHTML = "<h2>❌ Errore GPS: " + err.message + "</h2>",
+                { enableHighAccuracy: true }
+            );
+        } else {
+            document.body.innerHTML = "<h2>❌ Geolocalizzazione non supportata</h2>";
+        }
+    </script>
+</body>
+</html>
