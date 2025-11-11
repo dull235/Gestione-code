@@ -18,8 +18,7 @@ def main():
     st.markdown("""
     <style>
     .stApp {
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg")
-        no-repeat center center fixed;
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") no-repeat center center fixed;
         background-size: cover;
     }
     .main > div {
@@ -57,45 +56,45 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Ottieni lat/lon dalla query string ---
-    params = st.query_params
-    if "lat" in params and "lon" in params:
-        try:
-            lat = float(params["lat"])
-            lon = float(params["lon"])
-            st.session_state.posizione_attuale = (lat, lon)
-        except Exception:
-            pass
-
-    # --- Refresh automatico ogni 10 secondi ---
+    # --- Refresh automatico ---
     refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
         st.rerun()
 
-    # --- Geolocalizzazione con JS ---
+    # --- Geolocalizzazione affidabile ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
         st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS...")
+
+        # JS che invia lat/lon direttamente a Streamlit
         components.html("""
-            <script>
-            const success = (pos) => {
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                const query = new URLSearchParams(window.location.search);
-                query.set("lat", lat);
-                query.set("lon", lon);
-                window.location.search = query.toString();
-            };
-            const error = (err) => {
+                // salva in sessionStorage per persistente reload
+                sessionStorage.setItem("lat", lat);
+                sessionStorage.setItem("lon", lon);
+                location.reload();
+            },
+            function(err) {
                 document.body.innerHTML += "<p style='color:red;'>⚠️ Errore GPS: " + err.message + "</p>";
-            };
-            if (navigator.geolocation){
-                navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true, timeout: 10000 });
-            } else {
-                document.body.innerHTML += "<p style='color:red;'>❌ Geolocalizzazione non supportata.</p>";
-            }
-            </script>
+            },
+            {enableHighAccuracy: true}
+        );
+        </script>
         """, height=0)
+
+        # Prova a leggere lat/lon da sessionStorage (invisibile)
+        coords = st.experimental_get_query_params()
+        if "lat" in coords and "lon" in coords:
+            try:
+                lat = float(coords["lat"][0])
+                lon = float(coords["lon"][0])
+                st.session_state.posizione_attuale = (lat, lon)
+            except:
+                pass
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
@@ -112,7 +111,7 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form ticket ---
+    # --- Form invio ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -156,6 +155,7 @@ def main():
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
         st.markdown("<hr>", unsafe_allow_html=True)
+
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
@@ -184,6 +184,7 @@ def main():
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
+
 
 if __name__ == "__main__":
     main()
