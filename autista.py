@@ -14,7 +14,7 @@ def main():
         layout="wide"
     )
 
-    # --- CSS personalizzato ---
+    # --- Stile CSS personalizzato ---
     st.markdown("""
     <style>
     .stApp {
@@ -54,60 +54,63 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
-    if "gps_attivo" not in st.session_state:
-        st.session_state.gps_attivo = False
+    if "gps_permesso" not in st.session_state:
+        st.session_state.gps_permesso = False
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Refresh automatico ---
-    refresh_interval = 10
-    if time.time() - st.session_state.last_refresh_time > refresh_interval:
-        st.session_state.last_refresh_time = time.time()
-        st.rerun()
+    # --- Script JS per GPS automatico ---
+    if not st.session_state.gps_permesso:
+        components.html("""
+        <script>
+        function sendPosition(pos) {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            const query = new URLSearchParams(window.location.search);
+            query.set("lat", lat);
+            query.set("lon", lon);
+            window.location.search = query.toString();
+        }
 
-    # --- Geolocalizzazione con pulsante iniziale ---
-    if not st.session_state.gps_attivo:
-        st.markdown("**📡 Geolocalizzazione:** clicca il pulsante per inviare la tua posizione al sistema.")
-        if st.button("📍 Rileva posizione"):
-            # Questo script legge GPS e aggiorna la query string
-            components.html("""
-            <script>
-            navigator.geolocation.getCurrentPosition(
-                function(pos) {
-                    const lat = pos.coords.latitude.toFixed(6);
-                    const lon = pos.coords.longitude.toFixed(6);
-                    const query = new URLSearchParams(window.location.search);
-                    query.set("lat", lat);
-                    query.set("lon", lon);
-                    window.location.search = query.toString();
-                },
-                function(err) {
-                    alert("⚠️ Errore GPS: " + err.message);
-                },
-                {enableHighAccuracy: true}
-            );
-            </script>
-            """, height=0)
-            st.session_state.gps_attivo = True
-        return  # fermiamo qui finché l'utente non clicca
+        function gpsError(err) {
+            alert("Errore GPS: " + err.message);
+        }
 
-    # --- Leggi lat/lon dalla query string dopo il primo click ---
-    params = st.experimental_get_query_params()
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(sendPosition, gpsError, { enableHighAccuracy: true });
+            navigator.geolocation.watchPosition(sendPosition, gpsError, { enableHighAccuracy: true });
+        } else {
+            alert("Geolocalizzazione non supportata");
+        }
+        </script>
+        """, height=0)
+        st.session_state.gps_permesso = True
+
+    # --- Ottieni lat/lon dalla query string ---
+    params = st.query_params
     if "lat" in params and "lon" in params:
         try:
-            lat = float(params["lat"][0])
-            lon = float(params["lon"][0])
+            lat = float(params["lat"])
+            lon = float(params["lon"])
             st.session_state.posizione_attuale = (lat, lon)
         except:
             pass
 
     lat, lon = st.session_state.posizione_attuale
     st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
-    if st.session_state.ticket_id:
+
+    # Aggiorna posizione nel DB se ticket attivo
+    if st.session_state.ticket_id and lat != 0.0 and lon != 0.0:
         try:
             aggiorna_posizione(st.session_state.ticket_id, lat, lon)
         except Exception as e:
             st.warning(f"Errore aggiornamento posizione: {e}")
+
+    # --- Refresh automatico ogni 10 secondi ---
+    refresh_interval = 10
+    if time.time() - st.session_state.last_refresh_time > refresh_interval:
+        st.session_state.last_refresh_time = time.time()
+        st.rerun()
 
     # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -116,7 +119,7 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form invio ticket ---
+    # --- Form per invio ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -159,6 +162,7 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
+
         st.markdown("<hr>", unsafe_allow_html=True)
 
         try:
