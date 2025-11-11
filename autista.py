@@ -53,6 +53,8 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
+    if "gps_attivo" not in st.session_state:
+        st.session_state.gps_attivo = False
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
@@ -62,47 +64,48 @@ def main():
         st.session_state.last_refresh_time = time.time()
         st.rerun()
 
-    # --- Geolocalizzazione affidabile ---
-    if st.session_state.posizione_attuale == (0.0, 0.0):
-        st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS...")
+    # --- Geolocalizzazione con pulsante iniziale ---
+    if not st.session_state.gps_attivo:
+        st.markdown("**📡 Geolocalizzazione:** clicca il pulsante per inviare la tua posizione al sistema.")
+        if st.button("📍 Rileva posizione"):
+            components.html("""
+            <script>
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const lat = pos.coords.latitude.toFixed(6);
+                    const lon = pos.coords.longitude.toFixed(6);
+                    // salva in sessionStorage per persistente reload
+                    sessionStorage.setItem("lat", lat);
+                    sessionStorage.setItem("lon", lon);
+                    location.reload();
+                },
+                function(err) {
+                    alert("⚠️ Errore GPS: " + err.message);
+                },
+                {enableHighAccuracy: true}
+            );
+            </script>
+            """, height=0)
+            st.session_state.gps_attivo = True
+        return  # fermiamo qui finché l'utente non clicca
 
-        # JS che invia lat/lon direttamente a Streamlit
-        components.html("""
-        <script>
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                // salva in sessionStorage per persistente reload
-                sessionStorage.setItem("lat", lat);
-                sessionStorage.setItem("lon", lon);
-                location.reload();
-            },
-            function(err) {
-                document.body.innerHTML += "<p style='color:red;'>⚠️ Errore GPS: " + err.message + "</p>";
-            },
-            {enableHighAccuracy: true}
-        );
-        </script>
-        """, height=0)
+    # --- Leggi lat/lon da query string dopo il primo click ---
+    params = st.experimental_get_query_params()
+    if "lat" in params and "lon" in params:
+        try:
+            lat = float(params["lat"][0])
+            lon = float(params["lon"][0])
+            st.session_state.posizione_attuale = (lat, lon)
+        except:
+            pass
 
-        # Prova a leggere lat/lon da sessionStorage (invisibile)
-        coords = st.experimental_get_query_params()
-        if "lat" in coords and "lon" in coords:
-            try:
-                lat = float(coords["lat"][0])
-                lon = float(coords["lon"][0])
-                st.session_state.posizione_attuale = (lat, lon)
-            except:
-                pass
-    else:
-        lat, lon = st.session_state.posizione_attuale
-        st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
-        if st.session_state.ticket_id:
-            try:
-                aggiorna_posizione(st.session_state.ticket_id, lat, lon)
-            except Exception as e:
-                st.warning(f"Errore aggiornamento posizione: {e}")
+    lat, lon = st.session_state.posizione_attuale
+    st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
+    if st.session_state.ticket_id:
+        try:
+            aggiorna_posizione(st.session_state.ticket_id, lat, lon)
+        except Exception as e:
+            st.warning(f"Errore aggiornamento posizione: {e}")
 
     # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
@@ -139,8 +142,8 @@ def main():
                         destinazione=destinazione,
                         produttore=produttore,
                         rimorchio=int(rimorchio),
-                        lat=st.session_state.posizione_attuale[0],
-                        lon=st.session_state.posizione_attuale[1]
+                        lat=lat,
+                        lon=lon
                     )
                     st.session_state.ticket_id = ticket_id
                     st.session_state.modalita = "notifiche"
