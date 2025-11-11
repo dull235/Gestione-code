@@ -1,71 +1,29 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Attiva GPS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1976d2, #42a5f5);
-      color: white;
-      flex-direction: column;
-      text-align: center;
-    }
-    button {
-      background-color: #fff;
-      color: #1976d2;
-      font-size: 2em;
-      padding: 25px 50px;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0px 5px 15px rgba(0,0,0,0.3);
-      transition: 0.3s;
-    }
-    button:hover {
-      background-color: #e0e0e0;
-    }
-    h1 {
-      margin-bottom: 50px;
-    }
-    p {
-      font-size: 1.2em;
-    }
-  </style>
-</head>
-<body>
-  <h1>🚛 Entra nella nostra APP</h1>
-  <p>Abilita la posizione per procedere con la richiesta.</p>
-  <button onclick="activateGPS()"> Avvia</button>
+<html>
+  <body>
+    <h4>Entra nella nosta APP</h4>
+    <button onclick="getLocation()">Avvia</button>
+    <p id="status"></p>
 
-  <script>
-    function activateGPS() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(pos) {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            // Inserisci qui l'URL della tua app Streamlit Cloud
-            const streamlitURL = "https://gestione-code-uh4fcq6ng2f533a7bmjpap.streamlit.app/autista";
-            const url = `${streamlitURL}?lat=${lat}&lon=${lon}`;
-            window.location.href = url;
-          },
-          function(err) {
-            alert("⚠️ Errore nel rilevare la posizione: " + err.message);
-          },
-          { enableHighAccuracy: true }
-        );
-      } else {
-        alert("❌ Geolocalizzazione non supportata dal browser.");
+    <script>
+      function getLocation() {
+        document.getElementById("status").innerText = "Richiesta posizione...";
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(success, error);
+        } else {
+          document.getElementById("status").innerText = "Geolocalizzazione non supportata.";
+        }
       }
-    }
-  </script>
-</body>
+
+      function success(pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const url = window.location.href.split('?')[0] + `?lat=${lat}&lon=${lon}`;
+        window.location.href = url;
+      }
+
+      function error(err) {
+        document.getElementById("status").innerText = "Errore GPS: " + err.message;
+      }
+    </script>
+  </body>
 </html>
