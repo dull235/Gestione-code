@@ -66,7 +66,7 @@ def main():
     refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
-        st.experimental_rerun()
+        st.rerun()
 
     # ===============================================================
     # 🔧 PATCH GELOCALIZZAZIONE STABILE (watchPosition)
@@ -121,7 +121,7 @@ def main():
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
         if st.button("🚀 Avvia"):
             st.session_state.modalita = "form"
-            st.experimental_rerun()
+            st.rerun()
 
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
@@ -156,7 +156,7 @@ def main():
                     st.session_state.ticket_id = ticket_id
                     st.session_state.modalita = "notifiche"
                     st.success("✅ Ticket inviato all'ufficio! Attendi notifiche.")
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Errore invio ticket: {e}")
 
@@ -194,7 +194,8 @@ def main():
         if col2.button("❌ Chiudi ticket locale"):
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
-            st.experimental_rerun()
+            st.rerun()
 
 if __name__ == "__main__":
     main()
+
