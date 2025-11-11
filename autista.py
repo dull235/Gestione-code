@@ -38,33 +38,30 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Bottone per attivare GPS (necessario per browser) ---
+    # --- Bottone HTML per attivare GPS ---
     if not st.session_state.gps_attivo:
-        if st.button("📍 Attiva GPS"):
-            components.html("""
-            <script>
-            function sendPosition(pos) {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const query = new URLSearchParams(window.location.search);
-                query.set("lat", lat);
-                query.set("lon", lon);
-                window.location.search = query.toString();
-            }
-            function gpsError(err) {
-                alert("Errore GPS: " + err.message);
-            }
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(sendPosition, gpsError, { enableHighAccuracy: true });
-                navigator.geolocation.watchPosition(sendPosition, gpsError, { enableHighAccuracy: true });
-            } else {
-                alert("Geolocalizzazione non supportata dal browser");
-            }
-            </script>
-            """, height=0)
-            st.session_state.gps_attivo = True
-            st.rerun()
-        st.info("Premi il pulsante per consentire la geolocalizzazione.")
+        st.markdown("📡 Geolocalizzazione attiva: premi il pulsante per fornire la posizione.")
+        components.html("""
+            <button style='padding:10px 20px;font-size:18px;' 
+                onclick="
+                    navigator.geolocation.getCurrentPosition(
+                        function(pos){
+                            const lat = pos.coords.latitude;
+                            const lon = pos.coords.longitude;
+                            const query = new URLSearchParams(window.location.search);
+                            query.set('lat', lat);
+                            query.set('lon', lon);
+                            window.location.search = query.toString();
+                        },
+                        function(err){
+                            alert('Errore GPS: ' + err.message);
+                        },
+                        { enableHighAccuracy: true }
+                    );
+                ">
+                📍 Attiva GPS
+            </button>
+        """, height=80)
         return  # non mostrare il resto fino al click
 
     # --- Ottieni lat/lon dalla query string ---
