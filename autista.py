@@ -13,7 +13,16 @@ def main():
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
         layout="wide"
     )
-
+    st.markdown("""
+    <link rel="manifest" href="manifest.json">
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+        .then(function(reg) { console.log('Service Worker registrato'); })
+        .catch(function(err) { console.log('Errore registrazione SW: ', err); });
+    }
+    </script>
+    """, unsafe_allow_html=True)
     # --- CSS personalizzato ---
     st.markdown("""
     <style>
@@ -188,3 +197,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
