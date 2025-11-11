@@ -1,37 +1,66 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Invio Posizione GPS</title>
+  <meta charset="UTF-8">
+  <title>Attiva GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1976d2, #42a5f5);
+      color: white;
+      flex-direction: column;
+      text-align: center;
+    }
+    button {
+      background-color: #fff;
+      color: #1976d2;
+      font-size: 2em;
+      padding: 25px 50px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0px 5px 15px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #e0e0e0;
+    }
+    h1 {
+      margin-bottom: 50px;
+    }
+  </style>
 </head>
 <body>
-    <h2>📍 Rilevamento GPS in corso...</h2>
-    <p>Attendere prego...</p>
+  <h1>🚛 Entra nell'app</h1>
+  <button onclick="activateGPS()">Avvia</button>
 
-    <script>
-        function inviaPosizione(lat, lon) {
-            // Modifica l'URL con quello della tua app Streamlit
-            const streamlitURL = "https://gestione-code-uh4fcq6ng2f533a7bmjpap.streamlit.app/";
-            const url = `${streamlitURL}?lat=${lat}&lon=${lon}`;
-            // Reindirizza automaticamente
+  <script>
+    function activateGPS() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            // Cambia <TUO_STREAMLIT_APP_URL> con l'URL della tua app Streamlit Cloud
+            const url = `https://gestione-code-uh4fcq6ng2f533a7bmjpap.streamlit.app/`;
             window.location.href = url;
-        }
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(pos) {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    inviaPosizione(lat, lon);
-                },
-                function(err) {
-                    alert("Errore nel rilevare la posizione: " + err.message);
-                },
-                { enableHighAccuracy: true }
-            );
-        } else {
-            alert("Geolocalizzazione non supportata dal browser.");
-        }
-    </script>
+          },
+          function(err) {
+            alert("⚠️ Errore GPS: " + err.message);
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        alert("❌ Geolocalizzazione non supportata dal browser.");
+      }
+    }
+  </script>
 </body>
 </html>
