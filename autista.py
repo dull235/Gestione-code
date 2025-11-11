@@ -3,7 +3,7 @@ import time
 import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 
-# Compatibilità Streamlit vecchie versioni
+# Compatibilità vecchie versioni Streamlit
 if not hasattr(st, "rerun"):
     st.rerun = st.experimental_rerun
 
@@ -14,16 +14,33 @@ def main():
         layout="wide"
     )
 
-    # --- Stile CSS ---
+    # --- CSS personalizzato ---
     st.markdown("""
     <style>
-    .stApp { background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
-            no-repeat center center fixed; background-size: cover; }
-    .main > div { background-color: rgba(255, 255, 255, 0.85) !important;
-                   padding: 20px; border-radius: 10px; color: black !important; }
-    .stButton button { background-color: #1976d2; color: white; border-radius: 8px; border: none; }
-    .notifica { background-color: rgba(255, 255, 255, 0.9); padding: 10px 15px;
-                border-left: 6px solid #1976d2; margin-bottom: 10px; border-radius: 6px; }
+    .stApp {
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
+        no-repeat center center fixed;
+        background-size: cover;
+    }
+    .main > div {
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        padding: 20px;
+        border-radius: 10px;
+        color: black !important;
+    }
+    .stButton button {
+        background-color: #1976d2;
+        color: white;
+        border-radius: 8px;
+        border: none;
+    }
+    .notifica {
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px 15px;
+        border-left: 6px solid #1976d2;
+        margin-bottom: 10px;
+        border-radius: 6px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -42,46 +59,37 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
-    # --- Ottieni lat/lon dalla query string ---
-    params = st.experimental_get_query_params()
-    if "lat" in params and "lon" in params:
-        try:
-            lat = float(params["lat"][0])
-            lon = float(params["lon"][0])
-            st.session_state.posizione_attuale = (lat, lon)
-            st.session_state.gps_attivo = True
-            st.rerun()
-        except:
-            pass
-
-    # --- Mostra pulsante GPS se non attivo ---
-    if not st.session_state.gps_attivo:
+    # --- Gestione POST GPS ---
+    if st.session_state.posizione_attuale == (0.0, 0.0) and not st.session_state.gps_attivo:
         st.markdown("**📡 Geolocalizzazione attiva: in attesa di coordinate GPS...**")
         components.html("""
-        <button onclick="
-            navigator.geolocation.getCurrentPosition(
-                function(pos){
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const query = new URLSearchParams(window.location.search);
-                    query.set('lat', lat);
-                    query.set('lon', lon);
-                    window.location.search = query.toString();
-                },
-                function(err){ alert('⚠️ Errore GPS: ' + err.message); },
-                { enableHighAccuracy: true }
-            );
-        ">📍 Attiva GPS</button>
+            <button onclick="
+                navigator.geolocation.getCurrentPosition(
+                    function(pos){
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        fetch('', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({lat: lat, lon: lon})
+                        }).then(()=>{location.reload();});
+                    },
+                    function(err){ alert('⚠️ Errore GPS: ' + err.message); },
+                    { enableHighAccuracy: true }
+                );
+            ">📍 Attiva GPS</button>
         """, height=80)
+
+        # Ricezione POST dati GPS
+        if st.experimental_get_query_params().get("lat") and st.experimental_get_query_params().get("lon"):
+            st.session_state.posizione_attuale = (
+                float(st.experimental_get_query_params()["lat"][0]),
+                float(st.experimental_get_query_params()["lon"][0])
+            )
+            st.session_state.gps_attivo = True
         return  # ferma il flusso finché GPS non attivo
 
-    # --- Refresh automatico ---
-    refresh_interval = 10
-    if time.time() - st.session_state.last_refresh_time > refresh_interval:
-        st.session_state.last_refresh_time = time.time()
-        st.rerun()
-
-    # --- Mostra posizione corrente ---
+    # --- Mostra posizione se disponibile ---
     lat, lon = st.session_state.posizione_attuale
     st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
     if st.session_state.ticket_id:
@@ -90,6 +98,12 @@ def main():
         except Exception as e:
             st.warning(f"Errore aggiornamento posizione: {e}")
 
+    # --- Refresh automatico ogni 10 secondi ---
+    refresh_interval = 10
+    if time.time() - st.session_state.last_refresh_time > refresh_interval:
+        st.session_state.last_refresh_time = time.time()
+        st.rerun()
+
     # --- Modalità iniziale ---
     if st.session_state.modalita == "iniziale":
         st.info("Clicca su **Avvia** per creare una nuova richiesta di carico/scarico.")
@@ -97,7 +111,7 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form invio ticket ---
+    # --- Form per invio ticket ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
         nome = st.text_input("Nome e Cognome")
@@ -140,6 +154,7 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
+
         st.markdown("<hr>", unsafe_allow_html=True)
 
         try:
