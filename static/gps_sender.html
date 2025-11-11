@@ -5,28 +5,32 @@
     <title>Invio Posizione GPS</title>
 </head>
 <body>
-    <h2>Attendere prego… rilevazione posizione in corso</h2>
+    <h2>📍 Rilevamento GPS in corso...</h2>
+    <p>Attendere prego...</p>
+
     <script>
-        function sendPosition(lat, lon) {
-            fetch("/update_gps", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ lat: lat, lon: lon })
-            }).then(() => {
-                document.body.innerHTML = "<h2>✅ Posizione inviata con successo!</h2>";
-            }).catch(err => {
-                document.body.innerHTML = "<h2>❌ Errore invio posizione: " + err + "</h2>";
-            });
+        function inviaPosizione(lat, lon) {
+            // Modifica l'URL con quello della tua app Streamlit
+            const streamlitURL = "https://gestione-code-uh4fcq6ng2f533a7bmjpap.streamlit.app/";
+            const url = `${streamlitURL}?lat=${lat}&lon=${lon}`;
+            // Reindirizza automaticamente
+            window.location.href = url;
         }
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                pos => sendPosition(pos.coords.latitude, pos.coords.longitude),
-                err => document.body.innerHTML = "<h2>❌ Errore GPS: " + err.message + "</h2>",
+                function(pos) {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    inviaPosizione(lat, lon);
+                },
+                function(err) {
+                    alert("Errore nel rilevare la posizione: " + err.message);
+                },
                 { enableHighAccuracy: true }
             );
         } else {
-            document.body.innerHTML = "<h2>❌ Geolocalizzazione non supportata</h2>";
+            alert("Geolocalizzazione non supportata dal browser.");
         }
     </script>
 </body>
