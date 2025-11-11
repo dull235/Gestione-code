@@ -1,48 +1,17 @@
 import streamlit as st
 import time
-import streamlit.components.v1 as components
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
-import json
-from streamlit.server.server import Server
 
-# --- Compatibilità Streamlit vecchie versioni ---
+# Compatibilità Streamlit vecchie versioni
 if not hasattr(st, "rerun"):
     st.rerun = st.experimental_rerun
 
-# --- Endpoint per ricevere posizione GPS via POST ---
-def add_gps_endpoint():
-    server = Server.get_current()
-    if server is None:
-        return
-
-    from tornado.web import RequestHandler
-
-    class GPSHandler(RequestHandler):
-        def post(self):
-            try:
-                data = json.loads(self.request.body)
-                lat = float(data.get("lat", 0))
-                lon = float(data.get("lon", 0))
-                st.session_state.posizione_attuale = (lat, lon)
-                self.write({"status": "ok"})
-            except Exception as e:
-                self.write({"status": "error", "message": str(e)})
-
-    # Aggiunge route solo se non già presente
-    if not hasattr(st.session_state, "_gps_route_added"):
-        server._session_mgr._add_websocket_handler("/update_gps", GPSHandler)
-        st.session_state._gps_route_added = True
-
-# --- Funzione principale ---
 def main():
     st.set_page_config(
         page_title="Gestione Code - Autisti",
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
         layout="wide"
     )
-
-    # --- Registra endpoint GPS ---
-    add_gps_endpoint()
 
     # --- Stile CSS personalizzato ---
     st.markdown("""
@@ -87,19 +56,29 @@ def main():
     if "last_refresh_time" not in st.session_state:
         st.session_state.last_refresh_time = 0
 
+    # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
+    params = st.query_params
+    if "lat" in params and "lon" in params:
+        try:
+            lat = float(params["lat"])
+            lon = float(params["lon"])
+            st.session_state.posizione_attuale = (lat, lon)
+        except Exception:
+            pass
+
     # --- Refresh automatico ogni 10 secondi ---
     refresh_interval = 10
     if time.time() - st.session_state.last_refresh_time > refresh_interval:
         st.session_state.last_refresh_time = time.time()
         st.rerun()
 
-    # --- Mostra posizione o messaggio ---
-    lat, lon = st.session_state.posizione_attuale
-    if (lat, lon) == (0.0, 0.0):
-        st.markdown("**📡 Geolocalizzazione attiva:** in attesa di coordinate GPS…")
-        st.info("Apri il file `gps_sender.html` sul tuo dispositivo per inviare la posizione.")
+    # --- Se la posizione non è ancora disponibile ---
+    if st.session_state.posizione_attuale == (0.0, 0.0):
+        st.warning("📡 Posizione non rilevata. Apri il file `gps_sender.html` e consenti il GPS.")
     else:
+        lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
+        # Aggiorna posizione nel DB se ticket attivo
         if st.session_state.ticket_id:
             try:
                 aggiorna_posizione(st.session_state.ticket_id, lat, lon)
@@ -141,8 +120,8 @@ def main():
                         destinazione=destinazione,
                         produttore=produttore,
                         rimorchio=int(rimorchio),
-                        lat=lat,
-                        lon=lon
+                        lat=st.session_state.posizione_attuale[0],
+                        lon=st.session_state.posizione_attuale[1]
                     )
                     st.session_state.ticket_id = ticket_id
                     st.session_state.modalita = "notifiche"
@@ -187,7 +166,6 @@ def main():
             st.session_state.ticket_id = None
             st.session_state.modalita = "iniziale"
             st.rerun()
-
 
 if __name__ == "__main__":
     main()
