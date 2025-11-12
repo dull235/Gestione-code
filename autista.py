@@ -1,6 +1,6 @@
 import streamlit as st
-import time
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
+from streamlit_autorefresh import st_autorefresh
 
 # Compatibilità Streamlit vecchie versioni
 if not hasattr(st, "rerun"):
@@ -12,6 +12,9 @@ def main():
         page_icon="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png",
         layout="wide"
     )
+
+    # --- Aggiornamento automatico ogni 10 secondi ---
+    st_autorefresh(interval=10000, key="refresh_autista")
 
     # --- Stile CSS personalizzato ---
     st.markdown("""
@@ -53,8 +56,6 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
-    if "last_refresh_time" not in st.session_state:
-        st.session_state.last_refresh_time = 0
 
     # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
     params = st.query_params
@@ -65,12 +66,6 @@ def main():
             st.session_state.posizione_attuale = (lat, lon)
         except Exception:
             pass
-
-    # --- Refresh automatico ogni 10 secondi ---
-    refresh_interval = 10
-    if time.time() - st.session_state.last_refresh_time > refresh_interval:
-        st.session_state.last_refresh_time = time.time()
-        st.rerun()
 
     # --- Se la posizione non è ancora disponibile ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
@@ -186,5 +181,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
