@@ -39,7 +39,7 @@ def main():
                 url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: cover;
+    background-size: conteiner;
     }
     .main > div {
         background-color: rgba(173, 216, 230, 1) !important;
@@ -223,6 +223,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
