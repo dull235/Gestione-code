@@ -134,6 +134,7 @@ def main():
                         tipo=st.session_state.tipo,
                         destinazione=st.session_state.get("destinazione", ""),
                         produttore=st.session_state.get("produttore", ""),
+                        rimorchio_targa=st.session_state.get("targa_rim", ""),
                         rimorchio=int(st.session_state.rimorchio),
                         lat=st.session_state.posizione_attuale[0],
                         lon=st.session_state.posizione_attuale[1]
@@ -185,4 +186,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
