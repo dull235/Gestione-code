@@ -39,7 +39,7 @@ def main():
                 url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: conteiner;
+    background-size: contain;
     }
     .main > div {
         background-color: rgba(173, 216, 230, 0.85) !important;
@@ -54,16 +54,17 @@ def main():
         border-radius: 8px;
         border: none;
     }
-    /* Bordo più spesso e nero per campi input, text_area e select */
-        input, textarea, select {
+    div[data-baseweb="input"] > div > input,
+    div[data-baseweb="textarea"] > textarea,
+    input, textarea, select {
         background-color: #ffffff;
         color: #000000;
         border: 1px solid black !important;
         border-radius: 5px;
         padding: 5px;
+        font-weight: 500 !important;
     }
 
-/* Checkbox e radio personalizzati */
     div[role="radiogroup"] > label {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -72,12 +73,14 @@ def main():
         padding: 5px;
         margin-right: 5px;
         cursor: pointer;
+        transition: all 0.2s ease-in-out;
     }
 
-    div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked),
     div[role="radiogroup"] > label:has(input:checked) {
+        background-color: #e3f2fd !important;
         border: 2px solid #1976d2 !important;
-        background-color: #e3f2fd !important; 
+        color: #000000 !important;
+        font-weight: 600 !important;
     }
     
     div[data-baseweb="notification"]{
@@ -256,6 +259,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
