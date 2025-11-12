@@ -1,11 +1,25 @@
 import streamlit as st
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 from streamlit_autorefresh import st_autorefresh
-import time
+import base64
 
 # Compatibilità Streamlit vecchie versioni
 if not hasattr(st, "rerun"):
     st.rerun = st.experimental_rerun
+
+# --- Funzione per riprodurre suono locale ---
+def play_local_sound(file_path):
+    """
+    Riproduce un suono locale in Streamlit usando HTML/JS.
+    """
+    with open(file_path, "rb") as f:
+        audio_bytes = f.read()
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+    st.markdown(f"""
+    <audio autoplay>
+        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+    </audio>
+    """, unsafe_allow_html=True)
 
 def main():
     st.set_page_config(
@@ -26,7 +40,7 @@ def main():
         background-size: container;
     }
     .main > div {
-        background-color: rgba(255, 255, 255, 0.85) !important;
+        background-color: rgba(173, 216, 230, 1) !important;
         padding: 20px;
         border-radius: 10px;
         color: black !important;
@@ -75,7 +89,6 @@ def main():
         gps_url = "https://dull235.github.io/gps-sender/gps_sender.html"
         st.warning("📡 Posizione non rilevata.")
         st.markdown(f"[👉 Clicca qui per attivare il GPS]({gps_url})", unsafe_allow_html=True)
-
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
@@ -162,15 +175,11 @@ def main():
             testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
             data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
 
-            # --- Suono e popup per nuova notifica ---
+            # --- Suono locale e popup per nuova notifica ---
             if st.session_state.ultima_notifica_id != data:
                 st.session_state.ultima_notifica_id = data
-                # Suono
-                st.markdown(f"""
-                <audio autoplay>
-                    <source src="https://www.myinstants.com/media/sounds/notification-sound.mp3" type="audio/mpeg">
-                </audio>
-                """, unsafe_allow_html=True)
+                play_local_sound("notifica.mp3")  # file locale nella stessa cartella
+
                 # Popup visivo tipo toast
                 st.markdown(f"""
                 <script>
