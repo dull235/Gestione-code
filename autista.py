@@ -29,12 +29,10 @@ def main():
     # --- Aggiornamento automatico ogni 10 secondi ---
     st_autorefresh(interval=10000, key="refresh_autista")
 
-    # --- Stile CSS personalizzato fullscreen app mobile + overlay footer ---
+    # --- Stile CSS personalizzato + overlay footer ---
     st.markdown("""
     <style>
-    /* ------------------------------ */
     /* 🌄 SFONDO E STILE GENERALE */
-    /* ------------------------------ */
     .stApp {
         background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
                     url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
@@ -46,7 +44,6 @@ def main():
         margin: 0 !important;
     }
 
-    /* ------------------------------ */
     /* CONTENUTO PRINCIPALE */
     .main > div {
         background-color: rgba(173, 216, 230, 0.85) !important;
@@ -58,7 +55,6 @@ def main():
         max-width: 600px;
     }
 
-    /* ------------------------------ */
     /* BOTTONI E INPUT */
     .stButton button {
         background-color: #1976d2;
@@ -67,7 +63,6 @@ def main():
         border: none;
         font-weight: 600;
     }
-
     div[data-baseweb="input"] > div > input,
     div[data-baseweb="textarea"] > textarea,
     input, textarea, select {
@@ -78,7 +73,6 @@ def main():
         padding: 5px;
         font-weight: 500 !important;
     }
-
     div[role="radiogroup"] > label {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -95,13 +89,11 @@ def main():
         color: #000000 !important;
         font-weight: 600 !important;
     }
-
     div[data-baseweb="notification"] {
         background-color: #fff9c4 !important;
         color: #000 !important;
         border: 1px solid #fbc02d !important;
     }
-
     .notifica {
         background-color: rgba(255, 255, 255, 0.9);
         padding: 10px 15px;
@@ -110,9 +102,7 @@ def main():
         border-radius: 6px;
     }
 
-    /* ------------------------------ */
-    /* NASCONDI TUTTI GLI ELEMENTI STREAMLIT */
-    /* ------------------------------ */
+    /* NASCONDI ELEMENTI STREAMLIT (toolbar, sidebar, header) */
     [data-testid="stToolbar"],
     header,
     [data-testid="stDecoration"],
@@ -125,9 +115,7 @@ def main():
         display: none !important;
     }
 
-    /* ------------------------------ */
     /* LOGO PERSONALIZZATO IN ALTO */
-    /* ------------------------------ */
     .custom-logo {
         display: flex;
         justify-content: center;
@@ -142,31 +130,22 @@ def main():
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     @media (max-width: 600px) {
-        .custom-logo img {
-            height: 70px;
-        }
+        .custom-logo img { height: 70px; }
     }
 
-    /* ------------------------------ */
-    /* OVERLAY PER NASCONDERE IL FOOTER STREAMLIT */
-    /* ------------------------------ */
+    /* OVERLAY FOOTER - COPRE IL FOOTER, NON CLICCABILE */
     [data-testid="stFooter"] {
         position: fixed !important;
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 50px; /* altezza footer desktop */
+        height: 50px;
         z-index: 9999;
-        pointer-events: none; /* rende non cliccabile */
-        background: rgba(255,255,255,0.85); /* colore sfondo sopra il footer */
+        pointer-events: none;
+        background: rgba(255,255,255,0.95);
     }
-
-    /* ------------------------------ */
-    /* MEDIA QUERY MOBILE: overlay più alto e footer nascosto */
     @media (max-width: 768px) {
-        [data-testid="stFooter"],
-        [data-testid="stDecoration"] {
-            display: block !important;
+        [data-testid="stFooter"] {
             height: 80px !important;
             pointer-events: none;
             background: rgba(255,255,255,0.95) !important;
