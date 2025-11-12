@@ -35,7 +35,7 @@ def main():
     st.markdown("""
     <style>
     .stApp {
-    background: linear-gradient(rgba(179, 217, 255, 0.3), rgba(179, 217, 255, 0.3)),
+    background: linear-gradient(rgba(179, 217, 255, 0.8), rgba(179, 217, 255, 0.8)),
                 url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
     background-repeat: no-repeat;
     background-position: center;
@@ -53,6 +53,21 @@ def main():
         border-radius: 8px;
         border: none;
     }
+    /* Bordo più spesso e nero per campi input, text_area e select */
+        input, textarea, select {
+        border: 2px solid black !important;
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+/* Checkbox e radio personalizzati */
+    div[role="radiogroup"] > label, div[role="group"] > label {
+        border: 2px solid black;
+        border-radius: 5px;
+        padding: 5px;
+        margin-right: 5px;
+    }
+
     .notifica {
         background-color: rgba(255, 255, 255, 0.9);
         padding: 10px 15px;
@@ -223,6 +238,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
