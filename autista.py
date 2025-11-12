@@ -76,7 +76,7 @@ def main():
     }
     
     .notifica {
-        background-color: rgba(255, 255, 255, 0.5);
+        background-color: rgba(255, 255, 255, 0.9);
         padding: 10px 15px;
         border-left: 6px solid #1976d2;
         margin-bottom: 10px;
@@ -245,6 +245,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
