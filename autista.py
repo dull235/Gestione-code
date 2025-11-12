@@ -101,7 +101,7 @@ def main():
     # --- Campi salvati in sessione ---
     	nome = st.text_input("Nome e Cognome", value=st.session_state.get("nome", ""), key="nome")
     	azienda = st.text_input("Azienda", value=st.session_state.get("azienda", ""), key="azienda")
-   	targa = st.text_input("Targa Motrice", value=st.session_state.get("targa", ""), key="targa")
+   	    targa = st.text_input("Targa Motrice", value=st.session_state.get("targa", ""), key="targa")
 
     # --- Rimorchio ---
     	rimorchio = st.checkbox("Hai un rimorchio?", value=st.session_state.get("rimorchio", False), key="rimorchio")
@@ -184,4 +184,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
