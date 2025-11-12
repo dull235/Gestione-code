@@ -19,7 +19,7 @@ def main():
     st.markdown("""
     <style>
     .stApp { 
-        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
+        background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png") 
         no-repeat center center fixed; 
         background-size: container; 
     }
@@ -160,3 +160,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
