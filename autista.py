@@ -35,17 +35,18 @@ def main():
     st.markdown("""
     <style>
     .stApp {
-    background: linear-gradient(rgba(179, 217, 255, 0.2), rgba(179, 217, 255, 0.4)),
+    background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
                 url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
     background-repeat: no-repeat;
     background-position: center;
     background-size: conteiner;
     }
     .main > div {
-        background-color: rgba(173, 216, 230, 1) !important;
+        background-color: rgba(173, 216, 230, 0.85) !important;
         padding: 20px;
         border-radius: 10px;
         color: black !important;
+        border: 1px solid rgba(0,0,0,0.1);
     }
     .stButton button {
         background-color: #1976d2;
@@ -238,6 +239,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
