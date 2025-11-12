@@ -1,6 +1,7 @@
 import streamlit as st
 from database import inserisci_ticket, get_notifiche, aggiorna_posizione
 from streamlit_autorefresh import st_autorefresh
+import time
 
 # Compatibilità Streamlit vecchie versioni
 if not hasattr(st, "rerun"):
@@ -56,6 +57,8 @@ def main():
         st.session_state.modalita = "iniziale"
     if "posizione_attuale" not in st.session_state:
         st.session_state.posizione_attuale = (0.0, 0.0)
+    if "ultima_notifica_id" not in st.session_state:
+        st.session_state.ultima_notifica_id = None
 
     # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
     params = st.query_params
@@ -146,53 +149,66 @@ def main():
         ticket_id = st.session_state.ticket_id
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
-
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        # --- Stato per tracciare ultima notifica ---
-    if "ultima_notifica_id" not in st.session_state:
-        st.session_state.ultima_notifica_id = None
+        try:
+            notifiche = get_notifiche(ticket_id)
+        except Exception as e:
+            st.error(f"Errore recupero notifiche: {e}")
+            notifiche = []
 
-    try:
-        notifiche = get_notifiche(ticket_id)
-    except Exception as e:
-        st.error(f"Errore recupero notifiche: {e}")
-        notifiche = []
+        if notifiche:
+            ultima = notifiche[0]
+            testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
+            data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
 
-    if notifiche:
-        ultima = notifiche[0]
-        testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
-        data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
+            # --- Suono e popup per nuova notifica ---
+            if st.session_state.ultima_notifica_id != data:
+                st.session_state.ultima_notifica_id = data
+                # Suono
+                st.markdown(f"""
+                <audio autoplay>
+                    <source src="https://www.myinstants.com/media/sounds/notification-sound.mp3" type="audio/mpeg">
+                </audio>
+                """, unsafe_allow_html=True)
+                # Popup visivo tipo toast
+                st.markdown(f"""
+                <script>
+                    const toast = document.createElement('div');
+                    toast.innerHTML = "📢 Nuova notifica!";
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '20px';
+                    toast.style.right = '20px';
+                    toast.style.background = '#1976d2';
+                    toast.style.color = 'white';
+                    toast.style.padding = '15px 20px';
+                    toast.style.borderRadius = '10px';
+                    toast.style.zIndex = 10000;
+                    toast.style.fontSize = '16px';
+                    document.body.appendChild(toast);
+                    setTimeout(() => {{ toast.remove(); }}, 4000);
+                </script>
+                """, unsafe_allow_html=True)
 
-        # --- Controllo nuova notifica e suono ---
-        if st.session_state.ultima_notifica_id != data:  # puoi usare ID se disponibile
-            st.session_state.ultima_notifica_id = data
-            st.markdown(f"""
-            <audio autoplay>
-                <source src="https://www.myinstants.com/media/sounds/notification-sound.mp3" type="audio/mpeg">
-            </audio>
-            """, unsafe_allow_html=True)
+            st.markdown(f"### 🕓 Ultimo aggiornamento: `{data}`")
+            st.markdown(f"#### 💬 **{testo}**")
+            st.divider()
+            st.write("🔁 Storico ultime notifiche:")
+            for n in notifiche[1:5]:
+                testo_n = n.get("Testo") if isinstance(n, dict) else n[0]
+                data_n = n.get("Data") if isinstance(n, dict) else n[1]
+                st.markdown(f"<div class='notifica'>🕓 <b>{data_n}</b><br>{testo_n}</div>", unsafe_allow_html=True)
+        else:
+            st.info("Nessuna notifica disponibile al momento.")
 
-        st.markdown(f"### 🕓 Ultimo aggiornamento: `{data}`")
-        st.markdown(f"#### 💬 **{testo}**")
-        st.divider()
-        st.write("🔁 Storico ultime notifiche:")
-        for n in notifiche[1:5]:
-            testo_n = n.get("Testo") if isinstance(n, dict) else n[0]
-            data_n = n.get("Data") if isinstance(n, dict) else n[1]
-            st.markdown(f"<div class='notifica'>🕓 <b>{data_n}</b><br>{testo_n}</div>", unsafe_allow_html=True)
-    else:
-        st.info("Nessuna notifica disponibile al momento.")
-
-    col1, col2 = st.columns(2)
-    if col1.button("🔄 Aggiorna ora"):
-        st.rerun()
-    if col2.button("❌ Chiudi ticket locale"):
-        st.session_state.ticket_id = None
-        st.session_state.modalita = "iniziale"
-        st.rerun()
+        col1, col2 = st.columns(2)
+        if col1.button("🔄 Aggiorna ora"):
+            st.rerun()
+        if col2.button("❌ Chiudi ticket locale"):
+            st.session_state.ticket_id = None
+            st.session_state.modalita = "iniziale"
+            st.rerun()
 
 
 if __name__ == "__main__":
     main()
-
