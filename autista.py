@@ -18,7 +18,6 @@ def play_local_sound(file_path):
     </audio>
     """, unsafe_allow_html=True)
 
-
 def main():
     st.set_page_config(
         page_title="Gestione Code - Autisti",
@@ -29,12 +28,10 @@ def main():
     # --- Aggiornamento automatico ogni 10 secondi ---
     st_autorefresh(interval=10000, key="refresh_autista")
 
-    # --- Stile CSS personalizzato + Nascondi elementi Streamlit ---
+    # --- Stile CSS personalizzato + pulizia mobile ---
     st.markdown("""
     <style>
-    /* ------------------------------ */
-    /* 🌄 SFONDO E STILE GENERALE */
-    /* ------------------------------ */
+    /* ==================== SFONDO E STILE BASE ==================== */
     .stApp {
         background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
                     url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
@@ -77,6 +74,7 @@ def main():
         cursor: pointer;
         transition: all 0.2s ease-in-out;
     }
+
     div[role="radiogroup"] > label:has(input:checked) {
         background-color: #e3f2fd !important;
         border: 2px solid #1976d2 !important;
@@ -84,7 +82,7 @@ def main():
         font-weight: 600 !important;
     }
 
-    div[data-baseweb="notification"] {
+    div[data-baseweb="notification"]{
         background-color: #fff9c4 !important;
         color: #000 !important;
         border: 1px solid #fbc02d !important;
@@ -98,26 +96,21 @@ def main():
         border-radius: 6px;
     }
 
-    /* ------------------------------ */
-    /* 🧩 NASCONDI ELEMENTI STREAMLIT */
-    /* ------------------------------ */
-    [data-testid="stToolbar"], header, footer, [data-testid="stDecoration"], [data-testid="stHeader"], [data-testid="stActionButton"] {
-        visibility: hidden !important;
-        height: 0 !important;
-        display: none !important;
-    }
+    /* ==================== NASCONDI ELEMENTI STREAMLIT ==================== */
+    [data-testid="stToolbar"], header, [data-testid="stHeader"], [data-testid="stDecoration"],
+    footer, .stApp > footer, [data-testid="stActionButton"],
     [data-testid="stSidebarNav"], [data-testid="stSidebarHeader"] {
         display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
     }
 
-    /* ------------------------------ */
-    /* 🚛 LOGO PERSONALIZZATO */
-    /* ------------------------------ */
+    /* ==================== LOGO PERSONALIZZATO ==================== */
     .custom-logo {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         margin-top: 10px;
     }
     .custom-logo img {
@@ -133,16 +126,19 @@ def main():
     }
     </style>
 
-    <!-- LOGO IN ALTO -->
     <div class="custom-logo">
         <img src="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png" alt="Logo Gestione Code">
     </div>
     """, unsafe_allow_html=True)
 
-    # --- Contenuto app ---
+    # --- CONTENUTO DELL’APP ---
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
+    # ... [TUTTO IL RESTO DEL TUO CODICE INVARIATO] ...
+    # (puoi lasciare qui tutta la parte che segue: stato sessione, form, notifiche ecc.)
+
+    # === SNIPPET ORIGINALE CONTINUA QUI SENZA MODIFICHE ===
     # --- Stato sessione ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
@@ -153,7 +149,7 @@ def main():
     if "ultima_notifica_id" not in st.session_state:
         st.session_state.ultima_notifica_id = None
 
-    # --- Ottieni lat/lon dalla query string ---
+    # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -265,3 +261,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
