@@ -155,10 +155,22 @@ def main():
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 50px; /* altezza footer */
+        height: 50px; /* altezza footer desktop */
         z-index: 9999;
         pointer-events: none; /* rende non cliccabile */
         background: rgba(255,255,255,0.85); /* colore sfondo sopra il footer */
+    }
+
+    /* ------------------------------ */
+    /* MEDIA QUERY MOBILE: overlay più alto e footer nascosto */
+    @media (max-width: 768px) {
+        [data-testid="stFooter"],
+        [data-testid="stDecoration"] {
+            display: block !important;
+            height: 80px !important;
+            pointer-events: none;
+            background: rgba(255,255,255,0.95) !important;
+        }
     }
     </style>
 
