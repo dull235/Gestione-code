@@ -29,7 +29,7 @@ def main():
     # --- Aggiornamento automatico ogni 10 secondi ---
     st_autorefresh(interval=10000, key="refresh_autista")
 
-    # --- Stile CSS personalizzato fullscreen app mobile ---
+    # --- Stile CSS personalizzato fullscreen app mobile + overlay footer ---
     st.markdown("""
     <style>
     /* ------------------------------ */
@@ -115,13 +115,11 @@ def main():
     /* ------------------------------ */
     [data-testid="stToolbar"],
     header,
-    footer,
     [data-testid="stDecoration"],
     [data-testid="stHeader"],
     [data-testid="stActionButton"],
     [data-testid="stSidebarNav"],
-    [data-testid="stSidebarHeader"],
-    [data-testid="stFooter"] {
+    [data-testid="stSidebarHeader"] {
         visibility: hidden !important;
         height: 0 !important;
         display: none !important;
@@ -147,6 +145,20 @@ def main():
         .custom-logo img {
             height: 70px;
         }
+    }
+
+    /* ------------------------------ */
+    /* OVERLAY PER NASCONDERE IL FOOTER STREAMLIT */
+    /* ------------------------------ */
+    [data-testid="stFooter"] {
+        position: fixed !important;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 50px; /* altezza footer */
+        z-index: 9999;
+        pointer-events: none; /* rende non cliccabile */
+        background: rgba(255,255,255,0.85); /* colore sfondo sopra il footer */
     }
     </style>
 
