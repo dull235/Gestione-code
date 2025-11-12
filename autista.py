@@ -56,6 +56,8 @@ def main():
     }
     /* Bordo più spesso e nero per campi input, text_area e select */
         input, textarea, select {
+        background-color: #ffffff;
+        color: #000000;
         border: 1px solid black !important;
         border-radius: 5px;
         padding: 5px;
@@ -245,6 +247,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
