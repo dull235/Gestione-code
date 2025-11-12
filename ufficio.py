@@ -20,7 +20,7 @@ def main():
     .stApp { 
         background: url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.jpg") 
         no-repeat center center fixed; 
-        background-size: cover; 
+        background-size: container; 
     }
     .main > div { 
         background-color: rgba(255, 255, 255, 0.85) !important; 
@@ -145,3 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
