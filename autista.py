@@ -64,13 +64,22 @@ def main():
     }
 
 /* Checkbox e radio personalizzati */
-    div[role="radiogroup"] > label, div[role="group"] > label {
+    div[role="radiogroup"] > label {
+        background-color: #ffffff !important;
+        color: #000000 !important;
         border: 1px solid black;
         border-radius: 5px;
         padding: 5px;
         margin-right: 5px;
+        cursor: pointer;
     }
 
+    div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked),
+    div[role="radiogroup"] > label:has(input:checked) {
+        border: 2px solid #1976d2 !important;
+        background-color: #e3f2fd !important; 
+    }
+    
     div[data-baseweb="notification"]{
         background-color: #fff9c4 !important;
         color: #000 !important;
@@ -247,6 +256,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
