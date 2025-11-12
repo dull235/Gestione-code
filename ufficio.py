@@ -7,6 +7,7 @@ import math
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
+
 def main():
     st.set_page_config(
         page_title="Ufficio Carico/Scarico",
@@ -78,6 +79,14 @@ def main():
                 df["Data_chiamata"] = ""
             st.dataframe(df, use_container_width=True)
 
+            # --- Mostra elenco rimorchi sotto tabella, se presenti ---
+            if "Rimorchio_targa" in df.columns and df["Rimorchio_targa"].notna().any():
+                st.write("📄 **Targhe Rimorchi rilevate:**")
+                for _, riga in df[df["Rimorchio_targa"].notna()].iterrows():
+                    st.markdown(
+                        f"- {riga['Nome']} → 🚛 Motrice: `{riga['Targa']}` | Rimorchio: `{riga['Rimorchio_targa']}`"
+                    )
+
             selected_id = st.selectbox("Seleziona ticket:", df["ID"])
             col1, col2, col3, col4, col5 = st.columns(5)
             if col1.button("CHIAMATA"):
@@ -118,6 +127,11 @@ def main():
                 popup_text = f"""
                 <b>ID:</b> {r['ID']}<br>
                 <b>Nome:</b> {r['Nome']}<br>
+                <b>Targa Motrice:</b> {r.get('Targa','')}<br>
+                """
+                if r.get("Rimorchio_targa"):
+                    popup_text += f"<b>Rimorchio:</b> {r['Rimorchio_targa']}<br>"
+                popup_text += f"""
                 <b>Tipo:</b> {r['Tipo']}<br>
                 <b>Stato:</b> {r['Stato']}<br>
                 <b>Ultima posizione aggiornata:</b> {r.get('Data_chiamata','N/D')}
@@ -143,6 +157,6 @@ def main():
         else:
             st.info("Nessun ticket attivo al momento.")
 
+
 if __name__ == "__main__":
     main()
-
