@@ -9,9 +9,6 @@ if not hasattr(st, "rerun"):
 
 # --- Funzione per riprodurre suono locale ---
 def play_local_sound(file_path):
-    """
-    Riproduce un suono locale in Streamlit usando HTML/JS.
-    """
     with open(file_path, "rb") as f:
         audio_bytes = f.read()
     audio_base64 = base64.b64encode(audio_bytes).decode()
@@ -20,6 +17,7 @@ def play_local_sound(file_path):
         <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
     </audio>
     """, unsafe_allow_html=True)
+
 
 def main():
     st.set_page_config(
@@ -31,15 +29,18 @@ def main():
     # --- Aggiornamento automatico ogni 10 secondi ---
     st_autorefresh(interval=10000, key="refresh_autista")
 
-    # --- Stile CSS personalizzato ---
+    # --- Stile CSS personalizzato + Nascondi elementi Streamlit ---
     st.markdown("""
     <style>
+    /* ------------------------------ */
+    /* 🌄 SFONDO E STILE GENERALE */
+    /* ------------------------------ */
     .stApp {
-    background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
-                url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
+        background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
+                    url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
     .main > div {
         background-color: rgba(173, 216, 230, 0.85) !important;
@@ -54,6 +55,7 @@ def main():
         border-radius: 8px;
         border: none;
     }
+
     div[data-baseweb="input"] > div > input,
     div[data-baseweb="textarea"] > textarea,
     input, textarea, select {
@@ -75,20 +77,19 @@ def main():
         cursor: pointer;
         transition: all 0.2s ease-in-out;
     }
-
     div[role="radiogroup"] > label:has(input:checked) {
         background-color: #e3f2fd !important;
         border: 2px solid #1976d2 !important;
         color: #000000 !important;
         font-weight: 600 !important;
     }
-    
-    div[data-baseweb="notification"]{
+
+    div[data-baseweb="notification"] {
         background-color: #fff9c4 !important;
         color: #000 !important;
         border: 1px solid #fbc02d !important;
     }
-    
+
     .notifica {
         background-color: rgba(255, 255, 255, 0.9);
         padding: 10px 15px;
@@ -96,9 +97,49 @@ def main():
         margin-bottom: 10px;
         border-radius: 6px;
     }
+
+    /* ------------------------------ */
+    /* 🧩 NASCONDI ELEMENTI STREAMLIT */
+    /* ------------------------------ */
+    [data-testid="stToolbar"], header, footer, [data-testid="stDecoration"], [data-testid="stHeader"], [data-testid="stActionButton"] {
+        visibility: hidden !important;
+        height: 0 !important;
+        display: none !important;
+    }
+    [data-testid="stSidebarNav"], [data-testid="stSidebarHeader"] {
+        display: none !important;
+    }
+
+    /* ------------------------------ */
+    /* 🚛 LOGO PERSONALIZZATO */
+    /* ------------------------------ */
+    .custom-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
+    .custom-logo img {
+        height: 80px;
+        width: auto;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    @media (max-width: 600px) {
+        .custom-logo img {
+            height: 60px;
+        }
+    }
     </style>
+
+    <!-- LOGO IN ALTO -->
+    <div class="custom-logo">
+        <img src="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png" alt="Logo Gestione Code">
+    </div>
     """, unsafe_allow_html=True)
 
+    # --- Contenuto app ---
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
@@ -112,7 +153,7 @@ def main():
     if "ultima_notifica_id" not in st.session_state:
         st.session_state.ultima_notifica_id = None
 
-    # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
+    # --- Ottieni lat/lon dalla query string ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -122,7 +163,7 @@ def main():
         except Exception:
             pass
 
-    # --- Se la posizione non è ancora disponibile ---
+    # --- Se la posizione non è disponibile ---
     if st.session_state.posizione_attuale == (0.0, 0.0):
         gps_url = "https://dull235.github.io/gps-sender/gps_sender.html"
         st.warning("📡 Posizione non rilevata.")
@@ -130,7 +171,6 @@ def main():
     else:
         lat, lon = st.session_state.posizione_attuale
         st.markdown(f"**📍 Posizione attuale:** Lat {lat:.6f}, Lon {lon:.6f}")
-        # Aggiorna posizione nel DB se ticket attivo
         if st.session_state.ticket_id:
             try:
                 aggiorna_posizione(st.session_state.ticket_id, lat, lon)
@@ -144,33 +184,24 @@ def main():
             st.session_state.modalita = "form"
             st.rerun()
 
-    # --- Form per invio ticket ---
+    # --- Form ---
     elif st.session_state.modalita == "form":
         st.subheader("📋 Compila i tuoi dati")
-
-        # --- Campi salvati in sessione ---
         nome = st.text_input("Nome e Cognome", value=st.session_state.get("nome", ""), key="nome")
         azienda = st.text_input("Azienda", value=st.session_state.get("azienda", ""), key="azienda")
         targa = st.text_input("Targa Motrice", value=st.session_state.get("targa", ""), key="targa")
-
-        # --- Rimorchio ---
         rimorchio = st.checkbox("Hai un rimorchio?", value=st.session_state.get("rimorchio", False), key="rimorchio")
         if rimorchio:
             targa_rim = st.text_input("Targa Rimorchio", value=st.session_state.get("targa_rim", ""), key="targa_rim")
         else:
             st.session_state["targa_rim"] = ""
-
-        # --- Tipo Operazione ---
         tipo = st.radio("Tipo Operazione", ["Carico", "Scarico"], key="tipo")
-
         if tipo == "Carico":
             destinazione = st.text_input("Destinazione", value=st.session_state.get("destinazione", ""), key="destinazione")
             st.session_state["produttore"] = ""
         else:
             produttore = st.text_input("Produttore", value=st.session_state.get("produttore", ""), key="produttore")
             st.session_state["destinazione"] = ""
-
-        # --- Pulsante invio ---
         if st.button("📨 Invia Richiesta"):
             if not st.session_state.nome or not st.session_state.azienda or not st.session_state.targa:
                 st.error("⚠️ Compila tutti i campi obbligatori prima di inviare.")
@@ -201,42 +232,18 @@ def main():
         st.success(f"📦 Ticket attivo ID: {ticket_id}")
         st.subheader("📢 Notifiche ricevute")
         st.markdown("<hr>", unsafe_allow_html=True)
-
         try:
             notifiche = get_notifiche(ticket_id)
         except Exception as e:
             st.error(f"Errore recupero notifiche: {e}")
             notifiche = []
-
         if notifiche:
             ultima = notifiche[0]
             testo = ultima.get("Testo") if isinstance(ultima, dict) else ultima[0]
             data = ultima.get("Data") if isinstance(ultima, dict) else ultima[1]
-
-            # --- Suono locale e popup per nuova notifica ---
             if st.session_state.ultima_notifica_id != data:
                 st.session_state.ultima_notifica_id = data
-                play_local_sound("notifica.mp3")  # file locale nella stessa cartella
-
-                # Popup visivo tipo toast
-                st.markdown(f"""
-                <script>
-                    const toast = document.createElement('div');
-                    toast.innerHTML = "📢 Nuova notifica!";
-                    toast.style.position = 'fixed';
-                    toast.style.bottom = '20px';
-                    toast.style.right = '20px';
-                    toast.style.background = '#1976d2';
-                    toast.style.color = 'white';
-                    toast.style.padding = '15px 20px';
-                    toast.style.borderRadius = '10px';
-                    toast.style.zIndex = 10000;
-                    toast.style.fontSize = '16px';
-                    document.body.appendChild(toast);
-                    setTimeout(() => {{ toast.remove(); }}, 4000);
-                </script>
-                """, unsafe_allow_html=True)
-
+                play_local_sound("notifica.mp3")
             st.markdown(f"### 🕓 Ultimo aggiornamento: `{data}`")
             st.markdown(f"#### 💬 **{testo}**")
             st.divider()
@@ -247,7 +254,6 @@ def main():
                 st.markdown(f"<div class='notifica'>🕓 <b>{data_n}</b><br>{testo_n}</div>", unsafe_allow_html=True)
         else:
             st.info("Nessuna notifica disponibile al momento.")
-
         col1, col2 = st.columns(2)
         if col1.button("🔄 Aggiorna ora"):
             st.rerun()
@@ -259,21 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
