@@ -35,7 +35,7 @@ def main():
     st.markdown("""
     <style>
     .stApp {
-    background: linear-gradient(rgba(179, 217, 255, 0.8), rgba(179, 217, 255, 0.8)),
+    background: linear-gradient(rgba(179, 217, 255, 0.8), rgba(179, 217, 255, 0.2)),
                 url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
     background-repeat: no-repeat;
     background-position: center;
@@ -238,6 +238,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
