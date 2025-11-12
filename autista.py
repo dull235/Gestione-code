@@ -18,6 +18,7 @@ def play_local_sound(file_path):
     </audio>
     """, unsafe_allow_html=True)
 
+
 def main():
     st.set_page_config(
         page_title="Gestione Code - Autisti",
@@ -28,29 +29,43 @@ def main():
     # --- Aggiornamento automatico ogni 10 secondi ---
     st_autorefresh(interval=10000, key="refresh_autista")
 
-    # --- Stile CSS personalizzato + pulizia mobile ---
+    # --- Stile CSS personalizzato fullscreen app mobile ---
     st.markdown("""
     <style>
-    /* ==================== SFONDO E STILE BASE ==================== */
+    /* ------------------------------ */
+    /* 🌄 SFONDO E STILE GENERALE */
+    /* ------------------------------ */
     .stApp {
         background: linear-gradient(rgba(179, 217, 255, 0.6), rgba(179, 217, 255, 0.6)),
                     url("https://raw.githubusercontent.com/dull235/Gestione-code/main/static/sfondo.png");
         background-repeat: no-repeat;
         background-position: center;
-        background-size: contain;
+        background-size: cover;
+        min-height: 100vh;
+        padding: 0 !important;
+        margin: 0 !important;
     }
+
+    /* ------------------------------ */
+    /* CONTENUTO PRINCIPALE */
     .main > div {
         background-color: rgba(173, 216, 230, 0.85) !important;
         padding: 20px;
         border-radius: 10px;
         color: black !important;
         border: 1px solid rgba(0,0,0,0.1);
+        margin: 10px auto !important;
+        max-width: 600px;
     }
+
+    /* ------------------------------ */
+    /* BOTTONI E INPUT */
     .stButton button {
         background-color: #1976d2;
         color: white;
         border-radius: 8px;
         border: none;
+        font-weight: 600;
     }
 
     div[data-baseweb="input"] > div > input,
@@ -74,7 +89,6 @@ def main():
         cursor: pointer;
         transition: all 0.2s ease-in-out;
     }
-
     div[role="radiogroup"] > label:has(input:checked) {
         background-color: #e3f2fd !important;
         border: 2px solid #1976d2 !important;
@@ -82,7 +96,7 @@ def main():
         font-weight: 600 !important;
     }
 
-    div[data-baseweb="notification"]{
+    div[data-baseweb="notification"] {
         background-color: #fff9c4 !important;
         color: #000 !important;
         border: 1px solid #fbc02d !important;
@@ -96,49 +110,56 @@ def main():
         border-radius: 6px;
     }
 
-    /* ==================== NASCONDI ELEMENTI STREAMLIT ==================== */
-    [data-testid="stToolbar"], header, [data-testid="stHeader"], [data-testid="stDecoration"],
-    footer, .stApp > footer, [data-testid="stActionButton"],
-    [data-testid="stSidebarNav"], [data-testid="stSidebarHeader"] {
-        display: none !important;
+    /* ------------------------------ */
+    /* NASCONDI TUTTI GLI ELEMENTI STREAMLIT */
+    /* ------------------------------ */
+    [data-testid="stToolbar"],
+    header,
+    footer,
+    [data-testid="stDecoration"],
+    [data-testid="stHeader"],
+    [data-testid="stActionButton"],
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarHeader"],
+    [data-testid="stFooter"] {
         visibility: hidden !important;
         height: 0 !important;
+        display: none !important;
     }
 
-    /* ==================== LOGO PERSONALIZZATO ==================== */
+    /* ------------------------------ */
+    /* LOGO PERSONALIZZATO IN ALTO */
+    /* ------------------------------ */
     .custom-logo {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-bottom: 15px;
-        margin-top: 10px;
+        margin-bottom: 20px;
+        margin-top: 20px;
     }
     .custom-logo img {
-        height: 80px;
+        height: 100px;
         width: auto;
         border-radius: 15px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     @media (max-width: 600px) {
         .custom-logo img {
-            height: 60px;
+            height: 70px;
         }
     }
     </style>
 
+    <!-- LOGO IN ALTO -->
     <div class="custom-logo">
         <img src="https://raw.githubusercontent.com/dull235/Gestione-code/main/static/icon.png" alt="Logo Gestione Code">
     </div>
     """, unsafe_allow_html=True)
 
-    # --- CONTENUTO DELL’APP ---
+    # --- Contenuto app ---
     st.title("🚛 Pagina Autisti")
     st.write("Compila i tuoi dati e ricevi aggiornamenti dall'ufficio in tempo reale.")
 
-    # ... [TUTTO IL RESTO DEL TUO CODICE INVARIATO] ...
-    # (puoi lasciare qui tutta la parte che segue: stato sessione, form, notifiche ecc.)
-
-    # === SNIPPET ORIGINALE CONTINUA QUI SENZA MODIFICHE ===
     # --- Stato sessione ---
     if "ticket_id" not in st.session_state:
         st.session_state.ticket_id = None
@@ -149,7 +170,7 @@ def main():
     if "ultima_notifica_id" not in st.session_state:
         st.session_state.ultima_notifica_id = None
 
-    # --- Ottieni lat/lon dalla query string (gps_sender.html) ---
+    # --- Ottieni lat/lon dalla query string ---
     params = st.query_params
     if "lat" in params and "lon" in params:
         try:
@@ -261,4 +282,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
