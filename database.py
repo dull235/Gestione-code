@@ -18,7 +18,7 @@ def _execute_query(query):
         raise Exception(str(e))
 
 # --- Inserimento nuovo ticket ---
-def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=0, lat=None, lon=None):
+def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="", rimorchio=False, lat=None, lon=None, rimorchio_targa=""):
     data = {
         "Nome": nome,
         "Azienda": azienda,
@@ -26,7 +26,8 @@ def inserisci_ticket(nome, azienda, targa, tipo, destinazione="", produttore="",
         "Tipo": tipo,
         "Destinazione": destinazione,
         "Produttore": produttore,
-        "Rimorchio": rimorchio,
+        "Rimorchio": bool(rimorchio),
+        "Rimorchio_targa": rimorchio_targa,
         "Lat": lat if lat is not None else 0.0,
         "Lon": lon if lon is not None else 0.0,
         "Stato": "Nuovo",
@@ -105,3 +106,4 @@ def get_notifiche(ticket_id):
     return _execute_query(
         supabase.table("notifiche").select("Testo, Data").eq("Ticket_id", ticket_id).order("ID", desc=True)
     )
+
